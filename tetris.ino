@@ -72,10 +72,13 @@ void loop()
     //Richi:
     for (;;)
     {
-        rotate_left();
+
         dropStoneOnePixel();
+        rotate_right();
         delay(700);
     }
+
+    //checkout the code before trying to use this
     // for (int i =0 ;i<3;i++)
     // {
     //     delay(700);
@@ -258,7 +261,7 @@ void render_stone_matrix()
         {
             if (col + current_stone_test.x_offset < COLUMNS && row + current_stone_test.y_offset < ROWS)
             {
-                led_num = ((current_stone.x_offset + col) * 8) + current_stone.y_offset +row;
+                led_num = ((current_stone.x_offset + col) * 8) + current_stone.y_offset + row;
                 switch (current_stone_test.order)
                 {
                 case 3:
@@ -294,6 +297,8 @@ void rotate_right()
         }
         current_stone_test.matrix = replacement;
     }
+    if (collides())
+        reset_move();
 }
 
 void rotate_left()
@@ -311,6 +316,8 @@ void rotate_left()
 
         current_stone_test.matrix = replacement;
     }
+    if (collides())
+        reset_move();
 }
 
 //returns true if stone would collide
@@ -360,6 +367,7 @@ void writeIntoGState()
         }
     }
     stoneIsSetted = false;
+    removeFilledRows();
     render();
     select_random_stone();
 }
@@ -397,9 +405,41 @@ void createGameState()
     {
         for (uint8_t row = 0; row < ROWS; row++)
         {
-            game_state[row][col] = false;
+            game_state[row][col] = true;
         }
     }
 }
+void removeFilledRows()
+{
+    for (uint8_t row = 0; row < ROWS; row++)
+    {
+        for (uint8_t col = 0; col < COLUMNS-1; col++)
+        {
+            if(game_state[row][col]==false)
+                break;
+            else if(game_state[row][COLUMNS-1])
+            {
+                removeFilledRow(row);
+                row--;
+            }
+        }
+    }
+}
+void removeFilledRow(uint8_t row){
+    for (; row < ROWS; row++)
+    {
+        for (uint8_t col = 0; col < COLUMNS-1; col++)
+        {
+            if(row == ROWS-1){
+                game_state[row][col] = false;
+            }
+            else{
+                game_state[row][col]= game_state[row+1][col];
+            }
+            
+        }
+    }
+}
+
 
 
