@@ -4,6 +4,7 @@
 #include <Adafruit_NeoPixel.h>
 #ifdef __AVR__
 #include <avr/power.h>
+#include <avr/interrupt.h>
 #endif
 #define PIN 13
 
@@ -48,8 +49,32 @@ Stone_Matrix replacement; // memory region for rotation
 
 uint8_t selected_stone = 0;
 
+void printGameState(void)
+{
+    // spaltenkopf
+    Serial.print("  ");
+    for (uint8_t i = 0; i < COLUMNS; i++)
+    {
+        Serial.print("|" + i);
+    }
+    Serial.println("|");
+
+    // game sate
+    for (int i = ROWS - 1; i >= 0; i--)
+    {
+        Serial.print(i);
+        Serial.print("|");
+        for (int j = 0; j < COLUMNS; j++)
+        {
+            Serial.print(game_state[i][j] ? "X" : "O");
+        }
+        Serial.println();
+    }
+}
+
 void setup()
 {
+    Serial.begin(9600);
     createGameState();
     led_matrix.begin();
     led_matrix.setBrightness(5);
@@ -57,7 +82,21 @@ void setup()
 
     select_random_stone();
     led_matrix.show();
+
+    pinMode(2, INPUT);
+    pinMode(13, OUTPUT);
+    digitalWrite(2, HIGH);
+
+    sei();
+    EIMSK |= (1 << INT0);
+    EICRA |= (1 << ISC01); // trigger int0 on falling edge
 }
+
+ISR(INT0_vect)
+{
+    rotate_left();
+}
+
 void restart()
 {
     setup();
@@ -72,9 +111,10 @@ void loop()
     //Richi:
     for (;;)
     {
-
-        dropStoneOnePixel();
         rotate_right();
+        delay(700);
+        dropStoneOnePixel();
+        //rotate_right();
         delay(700);
     }
 
@@ -235,6 +275,7 @@ void render()
         render_stone_matrix();
     }
     led_matrix.show();
+    printGameState();
 }
 void render_game_state()
 {
@@ -259,10 +300,10 @@ void render_stone_matrix()
     {
         for (uint8_t row = 0; row < current_stone.order; row++)
         {
-            if (col + current_stone_test.x_offset < COLUMNS && row + current_stone_test.y_offset < ROWS)
+            if (col + current_stone.x_offset < COLUMNS && row + current_stone.y_offset < ROWS)
             {
                 led_num = ((current_stone.x_offset + col) * 8) + current_stone.y_offset + row;
-                switch (current_stone_test.order)
+                switch (current_stone.order)
                 {
                 case 3:
                     if (current_stone.matrix.s3.stone[row][col] == true)
@@ -299,6 +340,8 @@ void rotate_right()
     }
     if (collides())
         reset_move();
+    else
+        commit_move();
 }
 
 void rotate_left()
@@ -318,25 +361,68 @@ void rotate_left()
     }
     if (collides())
         reset_move();
+    else
+        commit_move();
 }
 
 //returns true if stone would collide
 bool collides()
 {
-    for (uint8_t row = 0; row + current_stone_test.y_offset < ROWS; row++)
+    for (uint8_t row = 0; row < current_stone_test.order; row++)
     {
-        for (uint8_t col = 0; col + current_stone_test.x_offset < COLUMNS; col++)
+        for (uint8_t col = 0;col < current_stone_test.order; col++)
         {
-            switch (current_stone_test.order)
+            if (0 <= col + current_stone_test.x_offset &&
+                COLUMNS - 1 >= col + current_stone_test.x_offset &&
+                0 <= row + current_stone_test.y_offset &&
+                ROWS - 1 >= row + current_stone_test.y_offset)
             {
-            case 3:
-                if (game_state[row + current_stone_test.y_offset][col + current_stone_test.x_offset] && current_stone_test.matrix.s3.stone[row][col])
-                    return true;
-                break;
-            case 2:
-                if (game_state[row + current_stone_test.y_offset][col + current_stone_test.x_offset] && current_stone_test.matrix.s2.stone[row][col])
-                    return true;
-                break;
+                switch (current_stone_test.order)
+                {
+                case 3:
+                    if (game_state[row + current_stone_test.y_offset][col + current_stone_test.x_offset] && current_stone_test.matrix.s3.stone[row][col])
+                    {
+                        //printdebugpixel();
+                        return true;
+                    }
+                    break;
+                case 2:
+                    if (game_state[row + current_stone_test.y_offset][col + current_stone_test.x_offset] && current_stone_test.matrix.s2.stone[row][col])
+                    {
+                        //printdebugpixel();
+                        return true;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    return isOutOFBounds();
+}
+bool isOutOFBounds()
+{
+    for (uint8_t row = 0; row < current_stone_test.order; row++)
+    {
+        for (uint8_t col = 0; col < current_stone_test.order; col++)
+        {
+            if (0 > col + current_stone_test.x_offset || COLUMNS - 1 < col + current_stone_test.x_offset || 0 > row + current_stone_test.y_offset)
+            {
+                switch (current_stone_test.order)
+                {
+                case 3:
+                    if (current_stone_test.matrix.s3.stone[row][col])
+                    {
+                        //printdebugpixel();
+                        return true;
+                    }
+                    break;
+                case 2:
+                    if (current_stone_test.matrix.s2.stone[row][col])
+                    {
+                        return true;
+                    }
+                    break;
+                }
             }
         }
     }
@@ -344,23 +430,21 @@ bool collides()
 }
 void writeIntoGState()
 {
-    printdebugpixel();
-
     for (uint8_t row = 0; row < current_stone.order; row++)
     {
         for (uint8_t col = 0; col < current_stone.order; col++)
         {
-            if (col + current_stone.y_offset < ROWS && row + current_stone.x_offset < COLUMNS)
+            if (row + current_stone.y_offset < ROWS && col + current_stone.x_offset < COLUMNS)
             {
                 switch (current_stone.order)
                 {
                 case 3:
-                    if (current_stone.matrix.s3.stone[col][row])
-                        game_state[col + current_stone.y_offset][row + current_stone.x_offset] = true; //current_stone.matrix.s3.stone[i][j];
+                    if (current_stone.matrix.s3.stone[row][col])
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset] = true; //current_stone.matrix.s3.stone[i][j];
                     break;
                 case 2:
-                    if (current_stone.matrix.s2.stone[col][row])
-                        game_state[col + current_stone.y_offset][row + current_stone.x_offset] = true; //current_stone.matrix.s2.stone[i][j];
+                    if (current_stone.matrix.s2.stone[row][col])
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset] = true; //current_stone.matrix.s2.stone[i][j];
                     break;
                 }
             }
@@ -383,7 +467,7 @@ void commit_move()
 void dropStoneOnePixel()
 {
     current_stone_test.y_offset--;
-    if (current_stone_test.y_offset == -1 || collides())
+    if (collides())
     {
         writeIntoGState();
     }
@@ -405,7 +489,7 @@ void createGameState()
     {
         for (uint8_t row = 0; row < ROWS; row++)
         {
-            game_state[row][col] = true;
+            game_state[row][col] = false;
         }
     }
 }
@@ -413,11 +497,11 @@ void removeFilledRows()
 {
     for (uint8_t row = 0; row < ROWS; row++)
     {
-        for (uint8_t col = 0; col < COLUMNS-1; col++)
+        for (uint8_t col = 0; col < COLUMNS - 1; col++)
         {
-            if(game_state[row][col]==false)
+            if (game_state[row][col] == false)
                 break;
-            else if(game_state[row][COLUMNS-1])
+            else if (game_state[row][COLUMNS - 1])
             {
                 removeFilledRow(row);
                 row--;
@@ -425,21 +509,20 @@ void removeFilledRows()
         }
     }
 }
-void removeFilledRow(uint8_t row){
+void removeFilledRow(uint8_t row)
+{
     for (; row < ROWS; row++)
     {
-        for (uint8_t col = 0; col < COLUMNS-1; col++)
+        for (uint8_t col = 0; col < COLUMNS; col++)
         {
-            if(row == ROWS-1){
+            if (row == ROWS - 1)
+            {
                 game_state[row][col] = false;
             }
-            else{
-                game_state[row][col]= game_state[row+1][col];
+            else
+            {
+                game_state[row][col] = game_state[row + 1][col];
             }
-            
         }
     }
 }
-
-
-
