@@ -2,12 +2,14 @@
 #include <avr/io.h>
 #include <avr/power.h>
 #include <avr/interrupt.h>
-#define PIN 13
 
 #define MUSIC_PIN 8
 #define MUSIC_CLK_SPEED 23438
-#define MUSIC_PART_A_LENGTH 41
+#define MUSIC_PART_A_LENGTH 43
 #define MUSIC_PART_B_LENGTH 16
+
+#define DISPLAY_PIN 13
+#define FF_REST_PIN 4
 
 #define ROWS 8
 #define COLUMNS 5
@@ -38,7 +40,7 @@ typedef struct
     uint8_t b;
 } Current_Stone;
 
-Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, DISPLAY_PIN, NEO_GRB + NEO_KHZ800);
 
 bool game_state[ROWS][COLUMNS];
 
@@ -50,27 +52,18 @@ Stone_Matrix replacement; // memory region for rotation
 
 uint8_t selected_stone = 0;
 
-const int MUSIC_PART_A_FREQUENCIES[] = {659, 494, 523, 587, 659, 587,
-                                        523, 494, 440, 440, 523, 659, 587, 523, 494, 523, 587, 659, 523, 440,
-                                        440, 0, 587, 698, 880, 784, 698, 659, 523, 659, 587, 523, 494, 494, 523,
-                                        587, 659, 523, 440, 440, 0};
-const int MUSIC_PART_A_DURATIONS[] = {4, 8, 8, 8, 16, 16, 8, 8, 4, 8, 8,
-                                      4, 8, 8, 6, 8, 4, 4, 4, 4, 2, 8, 4, 8, 4, 8, 8, 6, 8, 4, 8, 8, 4, 8, 8,
-                                      4, 4, 4, 4, 4, 4};
+const int MUSIC_PART_A_FREQUENCIES[]= {659, 494, 523, 587, 659, 587, 523, 494, 440, 440, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0, 587, 698, 880, 784, 698, 659, 659, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0};
+const int MUSIC_PART_A_DURATIONS[]  = {4, 8, 8, 8, 16, 16, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 2, 8, 4, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 4, 4};
 
-const int MUSIC_PART_B_FREQUENCIES[] = {330, 262, 294, 247, 262, 220,
-                                        208, 247, 330, 262, 294, 247, 262, 330, 440, 415};
-const int MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-                                      2, 4, 4, 2, 1};
+const int MUSIC_PART_B_FREQUENCIES[] = {330, 262, 294, 247, 262, 220, 208, 247, 330, 262, 294, 247, 262, 330, 440, 415};
+const int MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 2, 1};
 
 volatile uint8_t music_counter = 0;
 volatile uint8_t music_part = 0;
 
-int foo = 0;
-
 void setup()
 {
-    //Serial.begin(9600);
+    Serial.begin(9600);
     cli();
 
     // Set CS10 and CS12 bits for 1024 prescaler:
@@ -80,7 +73,7 @@ void setup()
     TCCR1B |= (1 << CS12);
 
     OCR1A = 23438; // start playing right after the interrupts are defined
-        TCCR1B |= (1 << WGM12); // turn on CTC mode:
+    TCCR1B |= (1 << WGM12); // turn on CTC mode:
 
     // enable timer compare interrupt:
     TIMSK1 |= (1 << OCIE1A);
@@ -99,7 +92,11 @@ void setup()
     led_matrix.show();
 
     pinMode(2, INPUT);
-    pinMode(13, OUTPUT);
+    pinMode(FF_REST_PIN, OUTPUT);
+    pinMode(DISPLAY_PIN, OUTPUT);
+
+    digitalWrite(FF_REST_PIN, LOW);
+    
 
     // periodisch soll der game state gezeichnet werden -> loop?
     // auf inputs soll schnell reagiert werden -> external interrupt
@@ -189,15 +186,23 @@ void restart()
 // the loop routine runs over and over again forever:
 void loop()
 {
-
-    //Richi:
     for (;;)
     {
-        //rotate_right();
-        //delay(700);
         dropStoneOnePixel();
-        //rotate_right();
-        delay(700);
+        delay(100);
+        render();
+        delay(100);
+        render();
+        delay(100);
+        render();
+        delay(100);
+        render();
+        delay(100);
+        render();
+        delay(100);
+        render();
+        delay(100);
+        render();
     }
 
 }
@@ -571,7 +576,7 @@ void removeFilledRow(uint8_t row)
 
 ISR(INT0_vect)
 {
-    int keyVal1 = analogRead(A2);
+    int keyVal1 = analogRead(A0); //TODO durch hardware-nahen Code ersetzen
 
     if (keyVal1 == 1023)
     {
@@ -590,5 +595,10 @@ ISR(INT0_vect)
 
     else if (keyVal1 >= 5 && keyVal1 <= 10)
     {
+      
     }
+
+    // reset FF
+    digitalWrite(FF_REST_PIN, HIGH);
+    digitalWrite(FF_REST_PIN, LOW);
 }
