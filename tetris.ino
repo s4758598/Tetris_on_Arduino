@@ -9,7 +9,6 @@
 #define MUSIC_PART_B_LENGTH 16
 
 #define DISPLAY_PIN 13
-#define FF_REST_PIN 4
 
 #define ROWS 8
 #define COLUMNS 5
@@ -57,8 +56,9 @@ Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, DISPLAY_PIN, NEO_GRB + NEO_
 
 Pixel game_state[ROWS][COLUMNS];
 
-Current_Stone current_stone; // tetorid, that moves
+Current_Stone current_stone;      // tetorid, that moves
 Current_Stone current_stone_test;
+
 bool stoneIsSetted = false;
 
 Stone_Matrix replacement; // memory region for rotation
@@ -76,7 +76,7 @@ volatile uint8_t music_part = 0;
 
 void setup()
 {
-    Serial.begin(9600);
+    //Serial.begin(9600);
     cli();
 
     // Set CS10 and CS12 bits for 1024 prescaler:
@@ -91,9 +91,6 @@ void setup()
     // enable timer compare interrupt:
     TIMSK1 |= (1 << OCIE1A);
 
-    // Setup external interrupt INT0 on rising edge
-    EIMSK |= (1 << INT0);
-    EICRA |= (1 << ISC01);
     sei(); // enable global interrupts
 
     createGameState();
@@ -104,17 +101,7 @@ void setup()
     select_random_stone();
     led_matrix.show();
 
-    pinMode(2, INPUT);
-    pinMode(FF_REST_PIN, OUTPUT);
     pinMode(DISPLAY_PIN, OUTPUT);
-
-    digitalWrite(FF_REST_PIN, LOW);
-    
-
-    // periodisch soll der game state gezeichnet werden -> loop?
-    // auf inputs soll schnell reagiert werden -> external interrupt
-    // -> modizifiert current_stone (bewegung, drehung)
-    // -> neu zeichnen?
 }
 
 ISR(TIMER1_COMPA_vect)
@@ -586,35 +573,6 @@ void removeFilledRow(uint8_t row)
     }
 }
 
-ISR(INT0_vect)
-{
-    int keyVal1 = analogRead(A0); //TODO durch hardware-nahen Code ersetzen
-
-    if (keyVal1 == 1023)
-    {
-        rotate_left();
-    }
-
-    else if (keyVal1 >= 990 && keyVal1 <= 1010)
-    {
-        move_left();
-    }
-
-    else if (keyVal1 >= 505 && keyVal1 <= 515)
-    {
-        move_right();
-    }
-
-    else if (keyVal1 >= 5 && keyVal1 <= 10)
-    {
-      
-    }
-
-    // reset FF
-    digitalWrite(FF_REST_PIN, HIGH);
-    digitalWrite(FF_REST_PIN, LOW);
-}
-
 void check_keys()
 {
     int keyVal1 = analogRead(A0); //TODO durch hardware-nahen Code ersetzen
@@ -643,8 +601,4 @@ void check_keys()
     {
         ;
     }
-
-    // reset FF
-    digitalWrite(FF_REST_PIN, HIGH);
-    digitalWrite(FF_REST_PIN, LOW);
 }
