@@ -189,20 +189,15 @@ void loop()
     for (;;)
     {
         dropStoneOnePixel();
-        delay(100);
-        render();
-        delay(100);
-        render();
-        delay(100);
-        render();
-        delay(100);
-        render();
-        delay(100);
-        render();
-        delay(100);
-        render();
-        delay(100);
-        render();
+        for (uint8_t i = 0; i < 7; i++)
+        {
+            for (uint8_t j = 0; j < 10; j++)
+            {
+                check_keys();
+                delay(10);
+            }
+            render();
+        }
     }
 
 }
@@ -596,6 +591,40 @@ ISR(INT0_vect)
     else if (keyVal1 >= 5 && keyVal1 <= 10)
     {
       
+    }
+
+    // reset FF
+    digitalWrite(FF_REST_PIN, HIGH);
+    digitalWrite(FF_REST_PIN, LOW);
+}
+
+void check_keys()
+{
+    int keyVal1 = analogRead(A0); //TODO durch hardware-nahen Code ersetzen
+
+    if (keyVal1 == 1023)
+    {
+        rotate_left();
+    }
+
+    else if (keyVal1 >= 990 && keyVal1 <= 1010)
+    {
+        move_left();
+    }
+
+    else if (keyVal1 >= 505 && keyVal1 <= 515)
+    {
+        move_right();
+    }
+
+    else if (keyVal1 >= 5 && keyVal1 <= 10)
+    {
+        rotate_right();
+    }
+
+    else
+    {
+        ;
     }
 
     // reset FF
