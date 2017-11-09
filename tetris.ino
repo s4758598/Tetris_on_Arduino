@@ -16,6 +16,21 @@
 
 typedef struct
 {
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+}Color;
+
+Color color_default;
+
+typedef struct
+{
+    bool active;
+    Color color;
+}Pixel;
+
+typedef struct
+{
     bool stone[3][3];
 } Stone_3x3;
 
@@ -35,14 +50,12 @@ typedef struct
     uint8_t order;
     int8_t x_offset;
     int8_t y_offset;
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
+    Color color;
 } Current_Stone;
 
 Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, DISPLAY_PIN, NEO_GRB + NEO_KHZ800);
 
-bool game_state[ROWS][COLUMNS];
+Pixel game_state[ROWS][COLUMNS];
 
 Current_Stone current_stone; // tetorid, that moves
 Current_Stone current_stone_test;
@@ -170,7 +183,7 @@ void printGameState(void)
         Serial.print("|");
         for (int j = 0; j < COLUMNS; j++)
         {
-            Serial.print(game_state[i][j] ? "X" : "O");
+            Serial.print(game_state[i][j].active ? "X" : "O");
         }
         Serial.println();
     }
@@ -209,9 +222,9 @@ void select_random_stone()
     //uint8_t selection = selected_stone; // XXX
 
     // select random color
-    current_stone.r = random(256);
-    current_stone.g = random(256);
-    current_stone.b = random(256);
+    current_stone.color.r = random(256);
+    current_stone.color.g = random(256);
+    current_stone.color.b = random(256);
     switch (selection)
     {
     case 0:
@@ -316,9 +329,9 @@ void render_game_state()
         for (uint8_t row = 0; row < ROWS; row++)
         {
 
-            if (game_state[row][col] == true)
+            if (game_state[row][col].active == true)
             {
-                led_matrix.setPixelColor(led_num, 255, 0, 0); //TODO
+                led_matrix.setPixelColor(led_num, game_state[row][col].color.r, game_state[row][col].color.g, game_state[row][col].color.b); //TODO
             }
             led_num++;
         }
@@ -339,13 +352,13 @@ void render_stone_matrix()
                 case 3:
                     if (current_stone.matrix.s3.stone[row][col] == true)
                     {
-                        led_matrix.setPixelColor(led_num,current_stone.r, current_stone.g, current_stone.b);
+                        led_matrix.setPixelColor(led_num,current_stone.color.r, current_stone.color.g, current_stone.color.b);
                     }
                     break;
                 case 2:
                     if (current_stone.matrix.s2.stone[row][col] == true)
                     {
-                        led_matrix.setPixelColor(led_num,current_stone.r, current_stone.g, current_stone.b);
+                        led_matrix.setPixelColor(led_num,current_stone.color.r, current_stone.color.g, current_stone.color.b);
                     }
                     break;
                 }
@@ -410,7 +423,7 @@ bool collides()
                 switch (current_stone_test.order)
                 {
                 case 3:
-                    if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset] &&
+                    if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset].active &&
                         current_stone_test.matrix.s3.stone[row][col])
                     {
                         //printdebugpixel();
@@ -418,7 +431,7 @@ bool collides()
                     }
                     break;
                 case 2:
-                    if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset] &&
+                    if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset].active &&
                         current_stone_test.matrix.s2.stone[row][col])
                     {
                         //printdebugpixel();
@@ -474,15 +487,17 @@ void writeIntoGState()
                 {
                 case 3:
                     if (current_stone.matrix.s3.stone[row][col])
-                        game_state[row + current_stone.y_offset][col + current_stone.x_offset] = true;
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
                     //current_stone.matrix.s3.stone[i][j];
                     break;
                 case 2:
                     if (current_stone.matrix.s2.stone[row][col])
-                        game_state[row + current_stone.y_offset][col + current_stone.x_offset] = true;
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
                     //current_stone.matrix.s2.stone[i][j];
                     break;
-                }
+                }                
             }
         }
     }
@@ -525,7 +540,9 @@ void createGameState()
     {
         for (uint8_t row = 0; row < ROWS; row++)
         {
-            game_state[row][col] = false;
+            game_state[row][col].active = false;
+            game_state[row][col].color = color_default;
+
         }
     }
 }
@@ -535,7 +552,7 @@ void removeFilledRows()
     {
         for (uint8_t col = 0; col < COLUMNS; col++)
         {
-            if (game_state[row][col] == false)
+            if (game_state[row][col].active == false)
             {
                 break;
             }
@@ -558,12 +575,12 @@ void removeFilledRow(uint8_t row)
             if (row == ROWS - 1)
             {
                 // letzte Zeile
-                game_state[row][col] = false;
+                game_state[row][col].active = false;
             }
 
             else
             {
-                game_state[row][col] = game_state[row + 1][col];
+                game_state[row][col]= game_state[row + 1][col];                
             }
         }
     }
