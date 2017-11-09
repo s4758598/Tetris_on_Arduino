@@ -3,15 +3,18 @@
 #include <avr/power.h>
 #include <avr/interrupt.h>
 
+#define DISPLAY_PIN 13
 #define MUSIC_PIN 8
+
 #define MUSIC_CLK_SPEED 23438
+#define MUSIC_SPEEDUP_FACTOR 0.1
 #define MUSIC_PART_A_LENGTH 43
 #define MUSIC_PART_B_LENGTH 16
 
-#define DISPLAY_PIN 13
-
 #define ROWS 8
 #define COLUMNS 5
+#define GAME_SPEEDUP_FACTOR 1.25
+#define GAME_LEVEL_UP_MODULO 3
 
 typedef struct
 {
@@ -74,9 +77,25 @@ const int MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 
 volatile uint8_t music_counter = 0;
 volatile uint8_t music_part = 0;
 
+uint8_t level = 0;
+int rows_cleared = 0; 
+
+float music_speedup = 1.0;
+float game_speedup = 1.0;
+
 void setup()
 {
-    //Serial.begin(9600);
+    setup_timer();
+    Serial.begin(9600);
+    
+    led_matrix.begin();
+    led_matrix.setBrightness(5);
+    
+    setup_game();
+}
+
+void setup_timer()
+{
     cli();
 
     // Set CS10 and CS12 bits for 1024 prescaler:
@@ -85,23 +104,27 @@ void setup()
     TCCR1B |= (1 << CS10);
     TCCR1B |= (1 << CS12);
 
-    OCR1A = 23438; // start playing right after the interrupts are defined
+    OCR1A = 23438;          // start playing right after the interrupts are defined
     TCCR1B |= (1 << WGM12); // turn on CTC mode:
 
     // enable timer compare interrupt:
     TIMSK1 |= (1 << OCIE1A);
 
-    sei(); // enable global interrupts
+    sei();
+}
 
-    createGameState();
-    led_matrix.begin();
-    led_matrix.setBrightness(5);
+void setup_game()
+{
+    clear_game_state();
+    create_new_stone();
     led_matrix.show();
+}
 
-    select_random_stone();
-    led_matrix.show();
-
-    pinMode(DISPLAY_PIN, OUTPUT);
+void restart()
+{
+    led_matrix.clear();
+    setup_game();
+    render();
 }
 
 ISR(TIMER1_COMPA_vect)
@@ -109,7 +132,7 @@ ISR(TIMER1_COMPA_vect)
     if (music_part == 0)
     {
         tone(MUSIC_PIN, MUSIC_PART_A_FREQUENCIES[music_counter]);
-        OCR1A = MUSIC_CLK_SPEED / MUSIC_PART_A_DURATIONS[music_counter];
+        OCR1A = (MUSIC_CLK_SPEED / music_speedup) / MUSIC_PART_A_DURATIONS[music_counter];
         music_counter++;
 
         if (music_counter >= MUSIC_PART_A_LENGTH)
@@ -122,7 +145,7 @@ ISR(TIMER1_COMPA_vect)
     else
     {
         tone(MUSIC_PIN, MUSIC_PART_B_FREQUENCIES[music_counter]);
-        OCR1A = MUSIC_CLK_SPEED / MUSIC_PART_B_DURATIONS[music_counter];
+        OCR1A = (MUSIC_CLK_SPEED / music_speedup) / MUSIC_PART_B_DURATIONS[music_counter];
         music_counter++;
 
         if (music_counter >= MUSIC_PART_B_LENGTH)
@@ -133,27 +156,38 @@ ISR(TIMER1_COMPA_vect)
     }
 }
 
+void process_move()
+{
+  if (collides())
+      reset_move();
+  else
+      commit_move();
+}
+
+void reset_move()
+{
+    current_stone_test = current_stone;
+}
+
+void commit_move()
+{
+    current_stone = current_stone_test;
+    render();
+}
+
 void move_right()
 {
     current_stone_test.x_offset++;
-
-    if (collides())
-        reset_move();
-    else
-        commit_move();
+    process_move();
 }
 
 void move_left()
 {
     current_stone_test.x_offset--;
-
-    if (collides())
-        reset_move();
-    else
-        commit_move();
+    process_move();
 }
 
-void printGameState(void)
+void print_game_state(void)
 {
     // spaltenkopf
     Serial.print("  ");
@@ -176,25 +210,17 @@ void printGameState(void)
     }
 }
 
-void restart()
-{
-    setup();
-    led_matrix.clear();
-    render();
-}
-
-// the loop routine runs over and over again forever:
 void loop()
 {
     for (;;)
     {
-        dropStoneOnePixel();
+        drop_stone_one_pixel();
         for (uint8_t i = 0; i < 7; i++)
         {
-            for (uint8_t j = 0; j < 10; j++)
+            for (uint8_t j = 0; j < 1; j++)
             {
-                check_keys();
-                delay(10);
+                check_input_buttons();
+                delay(100 / game_speedup);
             }
             render();
         }
@@ -202,17 +228,9 @@ void loop()
 
 }
 
-void select_random_stone()
+void create_new_stone()
 {
-    // select random stone
-    uint8_t selection = random(7);
-    //uint8_t selection = selected_stone; // XXX
-
-    // select random color
-    current_stone.color.r = random(256);
-    current_stone.color.g = random(256);
-    current_stone.color.b = random(256);
-    switch (selection)
+    switch (random(7))
     {
     case 0:
     {
@@ -283,20 +301,18 @@ void select_random_stone()
             false, true, true};
         break;
     }
+    }
 
-    default:
-    {
-        //TODO
-        break;
-    }
-    }
+    current_stone.color.r = random(256);
+    current_stone.color.g = random(256);
+    current_stone.color.b = random(256);
+    
     current_stone.y_offset = ROWS;
     current_stone.x_offset = 1;
     current_stone_test = current_stone;
     stoneIsSetted = true;
-
-    //dropStoneOnePixel();
 }
+
 void render()
 {
     led_matrix.clear();
@@ -306,8 +322,9 @@ void render()
         render_stone_matrix();
     }
     led_matrix.show();
-    printGameState();
+    //print_game_state();
 }
+
 void render_game_state()
 {
     uint8_t led_num = 0;
@@ -324,6 +341,7 @@ void render_game_state()
         }
     }
 }
+
 void render_stone_matrix()
 {
     uint8_t led_num;
@@ -362,16 +380,13 @@ void rotate_right()
         {
             for (uint8_t col = 0; col < current_stone_test.order; col++)
             {
-                replacement.s3.stone[row][col] =
-                current_stone_test.matrix.s3.stone[col][current_stone_test.order - 1 - row];
+                replacement.s3.stone[row][col] = current_stone_test.matrix.s3.stone[col][current_stone_test.order - 1 - row];
             }
         }
+        
         current_stone_test.matrix = replacement;
+        process_move();
     }
-    if (collides())
-        reset_move();
-    else
-        commit_move();
 }
 
 void rotate_left()
@@ -382,17 +397,13 @@ void rotate_left()
         {
             for (uint8_t col = 0; col < current_stone_test.order; col++)
             {
-                replacement.s3.stone[col][current_stone_test.order - 1 -row] =
-                    current_stone_test.matrix.s3.stone[row][col];
+                replacement.s3.stone[col][current_stone_test.order - 1 -row] = current_stone_test.matrix.s3.stone[row][col];
             }
         }
-
+        
         current_stone_test.matrix = replacement;
+        process_move(); // wahrscheinlich muss das nur im if-zweig ausgeführt werden
     }
-    if (collides())
-        reset_move();
-    else
-        commit_move();
 }
 
 //returns true if stone would collide
@@ -413,7 +424,7 @@ bool collides()
                     if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset].active &&
                         current_stone_test.matrix.s3.stone[row][col])
                     {
-                        //printdebugpixel();
+                        //print_debug_pixel();
                         return true;
                     }
                     break;
@@ -421,7 +432,7 @@ bool collides()
                     if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset].active &&
                         current_stone_test.matrix.s2.stone[row][col])
                     {
-                        //printdebugpixel();
+                        //print_debug_pixel();
                         return true;
                     }
                     break;
@@ -429,9 +440,10 @@ bool collides()
             }
         }
     }
-    return isOutOFBounds();
+    return is_out_of_bounds();
 }
-bool isOutOFBounds()
+
+bool is_out_of_bounds()
 {
     for (uint8_t row = 0; row < current_stone_test.order; row++)
     {
@@ -446,7 +458,7 @@ bool isOutOFBounds()
                 case 3:
                     if (current_stone_test.matrix.s3.stone[row][col])
                     {
-                        //printdebugpixel();
+                        //print_debug_pixel();
                         return true;
                     }
                     break;
@@ -462,7 +474,8 @@ bool isOutOFBounds()
     }
     return false;
 }
-void writeIntoGState()
+
+void write_into_game_state()
 {
     for (uint8_t row = 0; row < current_stone.order; row++)
     {
@@ -489,39 +502,33 @@ void writeIntoGState()
         }
     }
     stoneIsSetted = false;
-    removeFilledRows();
+    remove_filled_rows();
     render();
-    select_random_stone();
+    create_new_stone();
 }
-void reset_move()
-{
-    current_stone_test = current_stone;
-}
-void commit_move()
-{
-    current_stone = current_stone_test;
-    render();
-}
-void dropStoneOnePixel()
+
+void drop_stone_one_pixel()
 {
     current_stone_test.y_offset--;
     if (collides())
     {
-        writeIntoGState();
+        write_into_game_state();
     }
     else
     {
-        //printdebugpixel();
+        //print_debug_pixel();
         commit_move();
     }
 }
-void printdebugpixel()
+
+void print_debug_pixel()
 {
     led_matrix.setPixelColor(32, 0, 255, 0); //TODO
     led_matrix.show();
     delay(500);
 }
-void createGameState()
+
+void clear_game_state()
 {
     for (uint8_t col = 0; col < COLUMNS; col++)
     {
@@ -529,11 +536,11 @@ void createGameState()
         {
             game_state[row][col].active = false;
             game_state[row][col].color = color_default;
-
         }
     }
 }
-void removeFilledRows()
+
+void remove_filled_rows()
 {
     for (uint8_t row = 0; row < ROWS; row++)
     {
@@ -546,14 +553,25 @@ void removeFilledRows()
 
             if (col == COLUMNS - 1)
             {
-                // hier kanns gelöscht werden
-                removeFilledRow(row);
+                remove_filled_row(row);
                 row--;
+                rows_cleared++;
+
+                if (rows_cleared % GAME_LEVEL_UP_MODULO == 0)
+                {
+                  level++;
+                  restart();
+                  music_speedup += MUSIC_SPEEDUP_FACTOR;
+                  game_speedup *= GAME_SPEEDUP_FACTOR;
+                }
+                
             }
         }
     }
 }
-void removeFilledRow(uint8_t row)
+
+// entfernt nicht nur, sondern kopiert auch -> besserer name?
+void remove_filled_row(uint8_t row)
 {
     for (; row < ROWS - 1; row++)
     {
@@ -561,7 +579,7 @@ void removeFilledRow(uint8_t row)
         {
             if (row == ROWS - 1)
             {
-                // letzte Zeile
+                // clear topmost row
                 game_state[row][col].active = false;
             }
 
@@ -573,7 +591,7 @@ void removeFilledRow(uint8_t row)
     }
 }
 
-void check_keys()
+void check_input_buttons()
 {
     int keyVal1 = analogRead(A0); //TODO durch hardware-nahen Code ersetzen
 
