@@ -27,9 +27,11 @@ Color color_default;
 
 typedef struct
 {
-    bool active;
+    bool active = false;
     Color color;
 }Pixel;
+
+Pixel pixel_default;
 
 typedef struct
 {
@@ -487,15 +489,17 @@ void write_into_game_state()
                 {
                 case 3:
                     if (current_stone.matrix.s3.stone[row][col])
+                    {
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
-                    //current_stone.matrix.s3.stone[i][j];
+                    }
                     break;
                 case 2:
                     if (current_stone.matrix.s2.stone[row][col])
+                    {
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
-                    //current_stone.matrix.s2.stone[i][j];
+                    }
                     break;
                 }                
             }
@@ -563,8 +567,7 @@ void remove_filled_rows()
                   restart();
                   music_speedup += MUSIC_SPEEDUP_FACTOR;
                   game_speedup *= GAME_SPEEDUP_FACTOR;
-                }
-                
+                }                
             }
         }
     }
@@ -580,7 +583,7 @@ void remove_filled_row(uint8_t row)
             if (row == ROWS - 1)
             {
                 // clear topmost row
-                game_state[row][col].active = false;
+                game_state[row][col] = pixel_default;
             }
 
             else
