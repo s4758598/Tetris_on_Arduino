@@ -1,6 +1,4 @@
 #include <Adafruit_NeoPixel.h>
-#include <avr/io.h>
-#include <avr/power.h>
 #include <avr/interrupt.h>
 
 #define DISPLAY_PIN 13
@@ -87,13 +85,11 @@ Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, DISPLAY_PIN, NEO_GRB + NEO_
 Pixel game_state[ROWS][COLUMNS];
 
 Current_Stone current_stone;      // tetorid, that moves
-Current_Stone current_stone_test;
+Current_Stone current_stone_test; // collision test object
 
 bool stoneIsSetted = false;
 
 Stone_Matrix replacement; // memory region for rotation
-
-uint8_t selected_stone = 0;
 
 const int MUSIC_PART_A_FREQUENCIES[]= {659, 494, 523, 587, 659, 587, 523, 494, 440, 440, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0, 587, 698, 880, 784, 698, 659, 659, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0};
 const int MUSIC_PART_A_DURATIONS[]  = {4, 8, 8, 8, 16, 16, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 2, 8, 4, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 4, 4};
@@ -104,16 +100,17 @@ const int MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 
 volatile uint8_t music_counter = 0;
 volatile uint8_t music_part = 0;
 
+float music_speedup = 1.0;
+float game_speedup = 1.0;
+
 uint8_t level = 1;
 uint8_t rows_cleared = 0;
 
+uint8_t score_next_digit = 0;
 uint16_t score = 0;
 uint16_t score_divisor = 1;
-uint8_t score_slowdown = 1;
-uint8_t score_next_digit = 0;
 
-float music_speedup = 1.0;
-float game_speedup = 1.0;
+bool game_over_reached = false;
 
 uint8_t SEGMENT_LETTER_PINS[] = {SEGMENT_LETTER_A, SEGMENT_LETTER_B, SEGMENT_LETTER_C, SEGMENT_LETTER_D, SEGMENT_LETTER_E, SEGMENT_LETTER_F, SEGMENT_LETTER_G};
 uint8_t SEGMENT_DIGIT_PINS[] = {SEGMENT_DIGIT_PIN_1, SEGMENT_DIGIT_PIN_2, SEGMENT_DIGIT_PIN_3, SEGMENT_DIGIT_PIN_4};
@@ -220,13 +217,13 @@ void write_number_to_segment_display(uint16_t n)
     
     for(uint8_t i=1; i < 5; i++)
     {
-        write_digit_to_segment_position((n/divisor) % 10, 5 - i);
+        write_digit_to_segment_display_position((n/divisor) % 10, 5 - i);
         divisor *= 10;
         delay(t);
     }
 }
 
-void write_encoded_position_to_segment_display(uint8_t position)
+void write_position_vector_to_segment_display(uint8_t position)
 {
     for(uint8_t i=0; i<4; i++)
     {
@@ -234,7 +231,8 @@ void write_encoded_position_to_segment_display(uint8_t position)
         position = position >> 1;
     }
 }
-void write_encoded_digit_to_segment_display(uint8_t digit)
+
+void write_digit_vector_to_segment_display(uint8_t digit)
 {
     for(uint8_t i=0; i<7; i++)
     {
@@ -243,95 +241,119 @@ void write_encoded_digit_to_segment_display(uint8_t digit)
     }
 }
 
-void write_position_to_segment(uint8_t position)
+void write_position_to_segment_display(uint8_t position)
 {
     switch (position) 
     {
         case 0: 
-            write_encoded_position_to_segment_display(0);
+            write_position_vector_to_segment_display(0);
             break;
 
         case 1:
-            write_encoded_position_to_segment_display(14);
+            write_position_vector_to_segment_display(14);
             break;
                 
         case 2:
-            write_encoded_position_to_segment_display(13);
+            write_position_vector_to_segment_display(13);
             break;
                 
         case 3:
-            write_encoded_position_to_segment_display(11);
+            write_position_vector_to_segment_display(11);
             break;
                 
         case 4:
-            write_encoded_position_to_segment_display(7);
+            write_position_vector_to_segment_display(7);
             break;
     }
 }
 
-void write_digit_to_segment(uint8_t digit)
+void write_digit_to_segment_display(uint8_t digit)
 {
     switch(digit)
     {
         case 0:
-            write_encoded_digit_to_segment_display(63);
+            write_digit_vector_to_segment_display(63);
             break;
 
         case 1:
-            write_encoded_digit_to_segment_display(6);
+            write_digit_vector_to_segment_display(6);
             break;
 
         case 2:
-            write_encoded_digit_to_segment_display(91);
+            write_digit_vector_to_segment_display(91);
             break;
 
         case 3:
-            write_encoded_digit_to_segment_display(79);
+            write_digit_vector_to_segment_display(79);
             break;
 
         case 4:
-            write_encoded_digit_to_segment_display(102);
+            write_digit_vector_to_segment_display(102);
             break;
 
         case 5:
-            write_encoded_digit_to_segment_display(109);
+            write_digit_vector_to_segment_display(109);
             break;
 
         case 6:
-            write_encoded_digit_to_segment_display(125);
+            write_digit_vector_to_segment_display(125);
             break;
 
         case 7:
-            write_encoded_digit_to_segment_display(7);
+            write_digit_vector_to_segment_display(7);
             break;
 
         case 8:
-            write_encoded_digit_to_segment_display(127);
+            write_digit_vector_to_segment_display(127);
             break;
 
         case 9:
-            write_encoded_digit_to_segment_display(111);
+            write_digit_vector_to_segment_display(111);
             break;
     }
 }
 
-void write_digit_to_segment_position(uint8_t digit, uint8_t position)
+void write_digit_to_segment_display_position(uint8_t digit, uint8_t position)
 { 
-    write_position_to_segment(position);
-    write_digit_to_segment(digit);
+    write_position_to_segment_display(position);
+    write_digit_to_segment_display(digit);
 }
 
 void display_score()
 {
-    score = score % 10000; 
-    write_digit_to_segment_position((score/score_divisor) % 10, 4 - score_next_digit);
+    write_digit_to_segment_display_position((score/score_divisor) % 10, 4 - score_next_digit);
     
-    score_next_digit++;
-    score_next_digit %= 3;
-    
-    score_divisor *= 10;
-    if (score_divisor == 1000)
+    if (score > 10 && score > 100)
+    {
+      score_next_digit++;
+      score_next_digit %= 2;
+      score_divisor *= 10;
+      
+      if (score_divisor == 100)
         score_divisor = 1;
+    }
+
+    else if (score > 100 && score > 1000)
+    {
+      score_next_digit++;
+      score_next_digit %= 3;
+      score_divisor *= 10;
+      
+      if (score_divisor == 1000)
+        score_divisor = 1;
+    }
+
+    else if (score > 1000)
+    {
+      score = score % 10000; 
+      
+      score_next_digit++;
+      score_next_digit %= 4;
+      score_divisor *= 10;
+      
+      if (score_divisor == 10000)
+        score_divisor = 1;
+    }
 }
 
 void setup_game()
@@ -446,11 +468,24 @@ void loop()
                 
                 delay(5);
                 display_score();
+
+                if (game_over_reached)
+                {
+                    game_over();
+                }
             }
             render();
         }
     }
+}
 
+void game_over()
+{
+    for(;;)
+    {
+        display_score();
+        delay(5);
+    }
 }
 
 void create_new_stone()
@@ -694,6 +729,7 @@ bool is_out_of_bounds()
             }
         }
     }
+
     return false;
 }
 
@@ -712,6 +748,11 @@ void write_into_game_state()
                     {
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
+
+                        if(current_stone.y_offset + row == ROWS - 1)
+                        {
+                            game_over_reached = true;
+                        }
                     }
                     break;
                 case 2:
@@ -719,12 +760,18 @@ void write_into_game_state()
                     {
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
+
+                        if(current_stone.y_offset + row == ROWS - 1)
+                        {
+                            game_over_reached = true;
+                        }
                     }
                     break;
                 }                
             }
         }
     }
+    
     stoneIsSetted = false;
     remove_filled_rows();
     render();
@@ -758,6 +805,8 @@ void clear_game_state()
 
 void remove_filled_rows()
 {
+    bool level_up_reached = false;
+  
     for (uint8_t row = 0; row < ROWS; row++)
     {
         for (uint8_t col = 0; col < COLUMNS; col++)
@@ -769,27 +818,29 @@ void remove_filled_rows()
 
             if (col == COLUMNS - 1)
             {
-                remove_filled_row(row);
+                shift_rows_down_starting_from(row);
                 row--;
                 rows_cleared++;
-                score = rows_cleared * level;
+                score += level;
 
                 if (rows_cleared % GAME_LEVEL_UP_MODULO == 0)
                 {
-                  level++;
-                  create_next_level();
-                  music_speedup += MUSIC_SPEEDUP_FACTOR;
-                  game_speedup *= GAME_SPEEDUP_FACTOR;
+                    level_up_reached = true;
                 }
-
-                
             }
         }
     }
+
+    if (level_up_reached)
+    {
+        level++;
+        create_next_level();
+        music_speedup += MUSIC_SPEEDUP_FACTOR;
+        game_speedup *= GAME_SPEEDUP_FACTOR;
+    }
 }
 
-// entfernt nicht nur, sondern kopiert auch -> besserer name?
-void remove_filled_row(uint8_t row)
+void shift_rows_down_starting_from(uint8_t row)
 {
     for (; row < ROWS - 1; row++)
     {
