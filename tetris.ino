@@ -434,6 +434,7 @@ void loop()
 { 
     uint8_t pressed_button_old = 0;
     uint8_t pressed_button_new = 0;
+    uint32_t time;
   
     for (;;)
     {
@@ -442,8 +443,9 @@ void loop()
         {
             for (uint8_t j = 0; j < 25 / game_speedup; j++)
             {
+                time = micros();
                 pressed_button_new = check_input_buttons();
-                if (pressed_button_old != pressed_button_new)
+                if (pressed_button_old != pressed_button_new && micros() - time > 100)
                 {
                     switch(pressed_button_new)
                     {
