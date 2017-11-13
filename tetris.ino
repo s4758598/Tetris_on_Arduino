@@ -1,43 +1,13 @@
 #include <Adafruit_NeoPixel.h>
-#include <avr/interrupt.h>
 
-#define DISPLAY_PIN 13
-#define MUSIC_PIN 11                                                                                       
+#include "music.h"
+#include "segment_display.h"
 
-#define MUSIC_CLK_SPEED 23438
-#define MUSIC_SPEEDUP_FACTOR 0.1
-#define MUSIC_PART_A_LENGTH 43
-#define MUSIC_PART_B_LENGTH 16
-
+#define LED_DISPLAY_PIN 13
 #define ROWS 8
 #define COLUMNS 5
 #define GAME_SPEEDUP_FACTOR 1.25
 #define GAME_LEVEL_UP_MODULO 3
-
-#define SEGMENT_PIN_01 0
-#define SEGMENT_PIN_02 1
-#define SEGMENT_PIN_04 2
-#define SEGMENT_PIN_05 3
-#define SEGMENT_PIN_06 4
-#define SEGMENT_PIN_07 5
-#define SEGMENT_PIN_08 6
-#define SEGMENT_PIN_09 7
-#define SEGMENT_PIN_10 8
-#define SEGMENT_PIN_11 9
-#define SEGMENT_PIN_12 10
-
-#define SEGMENT_LETTER_A SEGMENT_PIN_11
-#define SEGMENT_LETTER_B SEGMENT_PIN_07
-#define SEGMENT_LETTER_C SEGMENT_PIN_04
-#define SEGMENT_LETTER_D SEGMENT_PIN_02
-#define SEGMENT_LETTER_E SEGMENT_PIN_01
-#define SEGMENT_LETTER_F SEGMENT_PIN_10
-#define SEGMENT_LETTER_G SEGMENT_PIN_05
-
-#define SEGMENT_DIGIT_PIN_1 SEGMENT_PIN_12
-#define SEGMENT_DIGIT_PIN_2 SEGMENT_PIN_09
-#define SEGMENT_DIGIT_PIN_3 SEGMENT_PIN_08
-#define SEGMENT_DIGIT_PIN_4 SEGMENT_PIN_06
 
 typedef struct
 {
@@ -46,15 +16,11 @@ typedef struct
     uint8_t b = 0;
 }Color;
 
-Color color_default;
-
 typedef struct
 {
     bool active = false;
     Color color;
 }Pixel;
-
-Pixel pixel_default;
 
 typedef struct
 {
@@ -80,280 +46,30 @@ typedef struct
     Color color;
 } Current_Stone;
 
-Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, DISPLAY_PIN, NEO_GRB + NEO_KHZ800);
-
+Color color_default;
+Pixel pixel_default;
 Pixel game_state[ROWS][COLUMNS];
-
 Current_Stone current_stone;      // tetorid, that moves
 Current_Stone current_stone_test; // collision test object
-
-bool stoneIsSetted = false;
-
 Stone_Matrix replacement; // memory region for rotation
 
-const int MUSIC_PART_A_FREQUENCIES[]= {659, 494, 523, 587, 659, 587, 523, 494, 440, 440, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0, 587, 698, 880, 784, 698, 659, 659, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0};
-const int MUSIC_PART_A_DURATIONS[]  = {4, 8, 8, 8, 16, 16, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 2, 8, 4, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 4, 4};
-
-const int MUSIC_PART_B_FREQUENCIES[] = {330, 262, 294, 247, 262, 220, 208, 247, 330, 262, 294, 247, 262, 330, 440, 415};
-const int MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 2, 1};
-
-volatile uint8_t music_counter = 0;
-volatile uint8_t music_part = 0;
-
-float music_speedup = 1.0;
-float game_speedup = 1.0;
-
-uint8_t level = 1;
-uint8_t rows_cleared = 0;
-
-uint8_t score_next_digit = 0;
-uint16_t score = 0;
-uint16_t score_divisor = 1;
-
 bool game_over_reached = false;
+bool stone_is_placed = false;
 
-uint8_t SEGMENT_LETTER_PINS[] = {SEGMENT_LETTER_A, SEGMENT_LETTER_B, SEGMENT_LETTER_C, SEGMENT_LETTER_D, SEGMENT_LETTER_E, SEGMENT_LETTER_F, SEGMENT_LETTER_G};
-uint8_t SEGMENT_DIGIT_PINS[] = {SEGMENT_DIGIT_PIN_1, SEGMENT_DIGIT_PIN_2, SEGMENT_DIGIT_PIN_3, SEGMENT_DIGIT_PIN_4};
+float game_speedup = 2.0;
+uint16_t score = 0;
+
+Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, LED_DISPLAY_PIN, NEO_GRB + NEO_KHZ800);
 
 void setup()
 {
-    setup_timer();
+    setup_music_timer();
     
     led_matrix.begin();
     led_matrix.setBrightness(5);
 
     setup_segment_display();
     setup_game();
-}
-
-void setup_timer()
-{
-    cli();
-
-    // Set CS10 and CS12 bits for 1024 prescaler:
-    TCCR1A = 0;
-    TCCR1B = 0;
-    TCCR1B |= (1 << CS10);
-    TCCR1B |= (1 << CS12);
-    
-    OCR1A = MUSIC_CLK_SPEED; // start playing right after the interrupts are defined
-    TCCR1B |= (1 << WGM12);  // turn on CTC mode
-    TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
-    
-    sei();
-}
-
-void setup_segment_display()
-{
-    for(uint8_t i=0; i < 7; i++)
-    {
-        configure_digital_pin_as_output(SEGMENT_LETTER_PINS[i]);
-    }
-
-    for(uint8_t i=0; i < 4; i++)
-    {
-        configure_digital_pin_as_output(SEGMENT_DIGIT_PINS[i]);
-    }
-}
-
-void configure_digital_pin_as_output(uint8_t pin)
-{    
-    if (pin < 8)
-    {
-        DDRD |= (1 << pin);
-    }
-    
-    else if (pin > 7 && pin < 14)
-    {
-        DDRB |= (1 << (pin - 8));
-    }
-}
-
-void set_digital_pin(uint8_t pin, uint8_t value)
-{
-    switch(value)
-    {
-        case 0:
-            set_digital_pin_low(pin);
-            break;
-
-        case 1:
-            set_digital_pin_high(pin);
-            break;
-    }
-}
-
-inline void set_digital_pin_high(uint8_t pin)
-{
-    if (pin < 8)
-    {
-        PORTD |= (1 << pin);
-    }
-    
-    else if (pin > 7 && pin < 14)
-    {
-        PORTB |= (1 << (pin % 8));
-    }
-}
-
-inline void set_digital_pin_low(uint8_t pin)
-{
-    if (pin < 8)
-    {
-        PORTD &= ~(1 << pin);
-    }
-    
-    else if (pin > 7 && pin < 14)
-    {
-        PORTB &= ~(1 << (pin % 8));
-    }
-}
-
-void write_number_to_segment_display(uint16_t n)
-{   
-    n = n % 10000; 
-    uint8_t t = 5;
-    uint16_t divisor = 1;
-    
-    for(uint8_t i=1; i < 5; i++)
-    {
-        write_digit_to_segment_display_position((n/divisor) % 10, 5 - i);
-        divisor *= 10;
-        delay(t);
-    }
-}
-
-void write_position_vector_to_segment_display(uint8_t position)
-{
-    for(uint8_t i=0; i<4; i++)
-    {
-        set_digital_pin(SEGMENT_DIGIT_PINS[i], position & 1);
-        position = position >> 1;
-    }
-}
-
-void write_digit_vector_to_segment_display(uint8_t digit)
-{
-    for(uint8_t i=0; i<7; i++)
-    {
-        set_digital_pin(SEGMENT_LETTER_PINS[i], digit & 1);
-        digit = digit >> 1;
-    }
-}
-
-void write_position_to_segment_display(uint8_t position)
-{
-    switch (position) 
-    {
-        case 0: 
-            write_position_vector_to_segment_display(0);
-            break;
-
-        case 1:
-            write_position_vector_to_segment_display(14);
-            break;
-                
-        case 2:
-            write_position_vector_to_segment_display(13);
-            break;
-                
-        case 3:
-            write_position_vector_to_segment_display(11);
-            break;
-                
-        case 4:
-            write_position_vector_to_segment_display(7);
-            break;
-    }
-}
-
-void write_digit_to_segment_display(uint8_t digit)
-{
-    switch(digit)
-    {
-        case 0:
-            write_digit_vector_to_segment_display(63);
-            break;
-
-        case 1:
-            write_digit_vector_to_segment_display(6);
-            break;
-
-        case 2:
-            write_digit_vector_to_segment_display(91);
-            break;
-
-        case 3:
-            write_digit_vector_to_segment_display(79);
-            break;
-
-        case 4:
-            write_digit_vector_to_segment_display(102);
-            break;
-
-        case 5:
-            write_digit_vector_to_segment_display(109);
-            break;
-
-        case 6:
-            write_digit_vector_to_segment_display(125);
-            break;
-
-        case 7:
-            write_digit_vector_to_segment_display(7);
-            break;
-
-        case 8:
-            write_digit_vector_to_segment_display(127);
-            break;
-
-        case 9:
-            write_digit_vector_to_segment_display(111);
-            break;
-    }
-}
-
-void write_digit_to_segment_display_position(uint8_t digit, uint8_t position)
-{ 
-    write_position_to_segment_display(position);
-    write_digit_to_segment_display(digit);
-}
-
-void display_score()
-{
-    write_digit_to_segment_display_position((score/score_divisor) % 10, 4 - score_next_digit);
-    
-    if (score > 10 && score > 100)
-    {
-      score_next_digit++;
-      score_next_digit %= 2;
-      score_divisor *= 10;
-      
-      if (score_divisor == 100)
-        score_divisor = 1;
-    }
-
-    else if (score > 100 && score > 1000)
-    {
-      score_next_digit++;
-      score_next_digit %= 3;
-      score_divisor *= 10;
-      
-      if (score_divisor == 1000)
-        score_divisor = 1;
-    }
-
-    else if (score > 1000)
-    {
-      score = score % 10000; 
-      
-      score_next_digit++;
-      score_next_digit %= 4;
-      score_divisor *= 10;
-      
-      if (score_divisor == 10000)
-        score_divisor = 1;
-    }
 }
 
 void setup_game()
@@ -368,35 +84,6 @@ void create_next_level()
     led_matrix.clear();
     setup_game();
     render();
-}
-
-ISR(TIMER1_COMPA_vect)
-{
-    if (music_part == 0)
-    {
-        tone(MUSIC_PIN, MUSIC_PART_A_FREQUENCIES[music_counter]);
-        OCR1A = (MUSIC_CLK_SPEED / music_speedup) / MUSIC_PART_A_DURATIONS[music_counter];
-        music_counter++;
-
-        if (music_counter >= MUSIC_PART_A_LENGTH)
-        {
-            music_counter = 0;
-            music_part = 1;
-        }
-    }
-
-    else
-    {
-        tone(MUSIC_PIN, MUSIC_PART_B_FREQUENCIES[music_counter]);
-        OCR1A = (MUSIC_CLK_SPEED / music_speedup) / MUSIC_PART_B_DURATIONS[music_counter];
-        music_counter++;
-
-        if (music_counter >= MUSIC_PART_B_LENGTH)
-        {
-            music_counter = 0;
-            music_part = 0;
-        }
-    }
 }
 
 void process_move()
@@ -469,7 +156,7 @@ void loop()
                 }
                 
                 delay(5);
-                display_score();
+                display_number_on_segment_display(score);
 
                 if (game_over_reached)
                 {
@@ -485,7 +172,7 @@ void game_over()
 {
     for(;;)
     {
-        display_score();
+        display_number_on_segment_display(score);
         delay(5);
     }
 }
@@ -572,14 +259,14 @@ void create_new_stone()
     current_stone.y_offset = ROWS;
     current_stone.x_offset = 1;
     current_stone_test = current_stone;
-    stoneIsSetted = true;
+    stone_is_placed = true;
 }
 
 void render()
 {
     led_matrix.clear();
     render_game_state();
-    if (stoneIsSetted)
+    if (stone_is_placed)
     {
         render_stone_matrix();
     }
@@ -700,6 +387,7 @@ bool collides()
             }
         }
     }
+    
     return is_out_of_bounds();
 }
 
@@ -774,7 +462,7 @@ void write_into_game_state()
         }
     }
     
-    stoneIsSetted = false;
+    stone_is_placed = false;
     remove_filled_rows();
     render();
     create_new_stone();
@@ -787,6 +475,7 @@ void drop_stone_one_pixel()
     {
         write_into_game_state();
     }
+
     else
     {
         commit_move();
@@ -808,6 +497,8 @@ void clear_game_state()
 void remove_filled_rows()
 {
     bool level_up_reached = false;
+    static uint8_t level = 1;
+    static uint8_t rows_cleared = 0;
   
     for (uint8_t row = 0; row < ROWS; row++)
     {
