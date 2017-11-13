@@ -4,7 +4,7 @@
 #include <avr/interrupt.h>
 
 #define DISPLAY_PIN 13
-#define MUSIC_PIN 8
+#define MUSIC_PIN 11                                                                                       
 
 #define MUSIC_CLK_SPEED 23438
 #define MUSIC_SPEEDUP_FACTOR 0.1
@@ -15,6 +15,33 @@
 #define COLUMNS 5
 #define GAME_SPEEDUP_FACTOR 1.25
 #define GAME_LEVEL_UP_MODULO 3
+
+#define SCORE_CLK_SPEED 1
+
+#define SEGMENT_PIN_01 0
+#define SEGMENT_PIN_02 1
+#define SEGMENT_PIN_04 2
+#define SEGMENT_PIN_05 3
+#define SEGMENT_PIN_06 4
+#define SEGMENT_PIN_07 5
+#define SEGMENT_PIN_08 6
+#define SEGMENT_PIN_09 7
+#define SEGMENT_PIN_10 8
+#define SEGMENT_PIN_11 9
+#define SEGMENT_PIN_12 10
+
+#define SEGMENT_LETTER_A SEGMENT_PIN_11
+#define SEGMENT_LETTER_B SEGMENT_PIN_07
+#define SEGMENT_LETTER_C SEGMENT_PIN_04
+#define SEGMENT_LETTER_D SEGMENT_PIN_02
+#define SEGMENT_LETTER_E SEGMENT_PIN_01
+#define SEGMENT_LETTER_F SEGMENT_PIN_10
+#define SEGMENT_LETTER_G SEGMENT_PIN_05
+
+#define SEGMENT_DIGIT_PIN_1 SEGMENT_PIN_12
+#define SEGMENT_DIGIT_PIN_2 SEGMENT_PIN_09
+#define SEGMENT_DIGIT_PIN_3 SEGMENT_PIN_08
+#define SEGMENT_DIGIT_PIN_4 SEGMENT_PIN_06
 
 typedef struct
 {
@@ -79,20 +106,29 @@ const int MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 
 volatile uint8_t music_counter = 0;
 volatile uint8_t music_part = 0;
 
-uint8_t level = 0;
-int rows_cleared = 0; 
+uint8_t level = 1;
+uint8_t rows_cleared = 0;
+
+uint16_t score = 0;
+uint16_t score_divisor = 1;
+uint8_t score_slowdown = 1;
+uint8_t score_next_digit = 0;
 
 float music_speedup = 1.0;
 float game_speedup = 1.0;
 
+uint8_t SEGMENT_LETTER_PINS[] = {SEGMENT_LETTER_A, SEGMENT_LETTER_B, SEGMENT_LETTER_C, SEGMENT_LETTER_D, SEGMENT_LETTER_E, SEGMENT_LETTER_F, SEGMENT_LETTER_G};
+uint8_t SEGMENT_DIGIT_PINS[] = {SEGMENT_DIGIT_PIN_1, SEGMENT_DIGIT_PIN_2, SEGMENT_DIGIT_PIN_3, SEGMENT_DIGIT_PIN_4};
+
 void setup()
 {
     setup_timer();
-    Serial.begin(9600);
+    //Serial.begin(9600); // breaks pin 0 and pin 1 -> segment display will not work correctly
     
     led_matrix.begin();
     led_matrix.setBrightness(5);
-    
+
+    setup_segment_display();
     setup_game();
 }
 
@@ -105,14 +141,138 @@ void setup_timer()
     TCCR1B = 0;
     TCCR1B |= (1 << CS10);
     TCCR1B |= (1 << CS12);
-
-    OCR1A = 23438;          // start playing right after the interrupts are defined
-    TCCR1B |= (1 << WGM12); // turn on CTC mode:
-
-    // enable timer compare interrupt:
-    TIMSK1 |= (1 << OCIE1A);
-
+    
+    OCR1A = MUSIC_CLK_SPEED; // start playing right after the interrupts are defined
+    TCCR1B |= (1 << WGM12);  // turn on CTC mode
+    TIMSK1 |= (1 << OCIE1A); // enable timer compare interrupt
+    
     sei();
+}
+
+void setup_segment_display()
+{
+    for(uint8_t i=0; i < 7; i++)
+    {
+        pinMode(SEGMENT_LETTER_PINS[i], OUTPUT);
+    }
+
+    for(uint8_t i=0; i < 4; i++)
+    {
+        pinMode(SEGMENT_DIGIT_PINS[i], OUTPUT);
+    }
+}
+
+void write_number_to_segment_display(uint16_t n)
+{   
+    n = n % 10000; 
+    uint8_t t = 5;
+    uint16_t divisor = 1;
+    
+    for(uint8_t i=1; i < 5; i++)
+    {
+        write_digit_to_segment_position((n/divisor) % 10, 5 - i);
+        divisor *= 10;
+        delay(t);
+    }
+}
+
+void write_encoded_position_to_segment_display(uint8_t position)
+{
+    for(uint8_t i=0; i<4; i++)
+    {
+        digitalWrite(SEGMENT_DIGIT_PINS[i], position & 1);
+        position = position >> 1;
+    }
+}
+void write_encoded_digit_to_segment_display(uint8_t digit)
+{
+    for(uint8_t i=0; i<7; i++)
+    {
+        digitalWrite(SEGMENT_LETTER_PINS[i], digit & 1);
+        digit = digit >> 1;
+    }
+}
+
+void write_digit_to_segment_position(uint8_t digit, uint8_t digit_position)
+{ 
+    switch (digit_position) 
+    {
+        case 0: 
+            write_encoded_position_to_segment_display(0);
+            break;
+
+        case 1:
+            write_encoded_position_to_segment_display(14);
+            break;
+                
+        case 2:
+            write_encoded_position_to_segment_display(13);
+            break;
+                
+        case 3:
+            write_encoded_position_to_segment_display(11);
+            break;
+                
+        case 4:
+            write_encoded_position_to_segment_display(7);
+            break;
+    }
+  
+    switch(digit)
+    {
+        case 0:
+            write_encoded_digit_to_segment_display(63);
+            break;
+
+        case 1:
+            write_encoded_digit_to_segment_display(6);
+            break;
+
+        case 2:
+            write_encoded_digit_to_segment_display(91);
+            break;
+
+        case 3:
+            write_encoded_digit_to_segment_display(79);
+            break;
+
+        case 4:
+            write_encoded_digit_to_segment_display(102);
+            break;
+
+        case 5:
+            write_encoded_digit_to_segment_display(109);
+            break;
+
+        case 6:
+            write_encoded_digit_to_segment_display(125);
+            break;
+
+        case 7:
+            write_encoded_digit_to_segment_display(7);
+            break;
+
+        case 8:
+            write_encoded_digit_to_segment_display(127);
+            break;
+
+        case 9:
+            write_encoded_digit_to_segment_display(111);
+            break;
+    }
+}
+
+void display_score()
+{
+    score = score % 10000; 
+    write_digit_to_segment_position((score/score_divisor) % 10, 4 - score_next_digit);
+    
+    score_next_digit++;
+    score_next_digit %= 3;
+    
+    score_divisor *= 10;
+    if (score_divisor == 10000)
+        score_divisor = 1;
 }
 
 void setup_game()
@@ -122,7 +282,7 @@ void setup_game()
     led_matrix.show();
 }
 
-void restart()
+void create_next_level()
 {
     led_matrix.clear();
     setup_game();
@@ -213,16 +373,17 @@ void print_game_state(void)
 }
 
 void loop()
-{
+{ 
     for (;;)
     {
         drop_stone_one_pixel();
         for (uint8_t i = 0; i < 7; i++)
         {
-            for (uint8_t j = 0; j < 1; j++)
+            for (uint8_t j = 0; j < 25 / game_speedup; j++)
             {
                 check_input_buttons();
-                delay(100 / game_speedup);
+                delay(5);
+                display_score();
             }
             render();
         }
@@ -560,14 +721,17 @@ void remove_filled_rows()
                 remove_filled_row(row);
                 row--;
                 rows_cleared++;
+                score = rows_cleared * level;
 
                 if (rows_cleared % GAME_LEVEL_UP_MODULO == 0)
                 {
                   level++;
-                  restart();
+                  create_next_level();
                   music_speedup += MUSIC_SPEEDUP_FACTOR;
                   game_speedup *= GAME_SPEEDUP_FACTOR;
-                }                
+                }
+
+                
             }
         }
     }
