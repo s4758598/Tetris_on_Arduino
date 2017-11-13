@@ -121,7 +121,6 @@ uint8_t SEGMENT_DIGIT_PINS[] = {SEGMENT_DIGIT_PIN_1, SEGMENT_DIGIT_PIN_2, SEGMEN
 void setup()
 {
     setup_timer();
-    //Serial.begin(9600); // breaks pin 0 and pin 1 -> segment display will not work correctly
     
     led_matrix.begin();
     led_matrix.setBrightness(5);
@@ -409,29 +408,6 @@ void move_left()
     process_move();
 }
 
-void print_game_state(void)
-{
-    // spaltenkopf
-    Serial.print("  ");
-    for (uint8_t i = 0; i < COLUMNS; i++)
-    {
-        Serial.print("|" + i);
-    }
-    Serial.println("|");
-
-    // game sate
-    for (int i = ROWS - 1; i >= 0; i--)
-    {
-        Serial.print(i);
-        Serial.print("|");
-        for (int j = 0; j < COLUMNS; j++)
-        {
-            Serial.print(game_state[i][j].active ? "X" : "O");
-        }
-        Serial.println();
-    }
-}
-
 void loop()
 { 
     uint8_t pressed_button_old = 0;
@@ -673,7 +649,6 @@ bool collides()
                     if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset].active &&
                         current_stone_test.matrix.s3.stone[row][col])
                     {
-                        //print_debug_pixel();
                         return true;
                     }
                     break;
@@ -681,7 +656,6 @@ bool collides()
                     if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset].active &&
                         current_stone_test.matrix.s2.stone[row][col])
                     {
-                        //print_debug_pixel();
                         return true;
                     }
                     break;
@@ -707,7 +681,6 @@ bool is_out_of_bounds()
                 case 3:
                     if (current_stone_test.matrix.s3.stone[row][col])
                     {
-                        //print_debug_pixel();
                         return true;
                     }
                     break;
@@ -767,16 +740,8 @@ void drop_stone_one_pixel()
     }
     else
     {
-        //print_debug_pixel();
         commit_move();
     }
-}
-
-void print_debug_pixel()
-{
-    led_matrix.setPixelColor(32, 0, 255, 0); //TODO
-    led_matrix.show();
-    delay(500);
 }
 
 void clear_game_state()
