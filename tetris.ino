@@ -151,12 +151,65 @@ void setup_segment_display()
 {
     for(uint8_t i=0; i < 7; i++)
     {
-        pinMode(SEGMENT_LETTER_PINS[i], OUTPUT);
+        configure_digital_pin_as_output(SEGMENT_LETTER_PINS[i]);
     }
 
     for(uint8_t i=0; i < 4; i++)
     {
-        pinMode(SEGMENT_DIGIT_PINS[i], OUTPUT);
+        configure_digital_pin_as_output(SEGMENT_DIGIT_PINS[i]);
+    }
+}
+
+void configure_digital_pin_as_output(uint8_t pin)
+{    
+    if (pin < 8)
+    {
+        DDRD |= (1 << pin);
+    }
+    
+    else if (pin > 7 && pin < 14)
+    {
+        DDRB |= (1 << (pin - 8));
+    }
+}
+
+void set_digital_pin(uint8_t pin, uint8_t value)
+{
+    switch(value)
+    {
+        case 0:
+            set_digital_pin_low(pin);
+            break;
+
+        case 1:
+            set_digital_pin_high(pin);
+            break;
+    }
+}
+
+inline void set_digital_pin_high(uint8_t pin)
+{
+    if (pin < 8)
+    {
+        PORTD |= (1 << pin);
+    }
+    
+    else if (pin > 7 && pin < 14)
+    {
+        PORTB |= (1 << (pin % 8));
+    }
+}
+
+inline void set_digital_pin_low(uint8_t pin)
+{
+    if (pin < 8)
+    {
+        PORTD &= ~(1 << pin);
+    }
+    
+    else if (pin > 7 && pin < 14)
+    {
+        PORTB &= ~(1 << (pin % 8));
     }
 }
 
@@ -178,7 +231,7 @@ void write_encoded_position_to_segment_display(uint8_t position)
 {
     for(uint8_t i=0; i<4; i++)
     {
-        digitalWrite(SEGMENT_DIGIT_PINS[i], position & 1);
+        set_digital_pin(SEGMENT_DIGIT_PINS[i], position & 1);
         position = position >> 1;
     }
 }
@@ -186,14 +239,14 @@ void write_encoded_digit_to_segment_display(uint8_t digit)
 {
     for(uint8_t i=0; i<7; i++)
     {
-        digitalWrite(SEGMENT_LETTER_PINS[i], digit & 1);
+        set_digital_pin(SEGMENT_LETTER_PINS[i], digit & 1);
         digit = digit >> 1;
     }
 }
 
-void write_digit_to_segment_position(uint8_t digit, uint8_t digit_position)
-{ 
-    switch (digit_position) 
+void write_position_to_segment(uint8_t position)
+{
+    switch (position) 
     {
         case 0: 
             write_encoded_position_to_segment_display(0);
@@ -215,7 +268,10 @@ void write_digit_to_segment_position(uint8_t digit, uint8_t digit_position)
             write_encoded_position_to_segment_display(7);
             break;
     }
-  
+}
+
+void write_digit_to_segment(uint8_t digit)
+{
     switch(digit)
     {
         case 0:
@@ -258,6 +314,12 @@ void write_digit_to_segment_position(uint8_t digit, uint8_t digit_position)
             write_encoded_digit_to_segment_display(111);
             break;
     }
+}
+
+void write_digit_to_segment_position(uint8_t digit, uint8_t position)
+{ 
+    write_position_to_segment(position);
+    write_digit_to_segment(digit);
 }
 
 void display_score()
