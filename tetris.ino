@@ -16,8 +16,6 @@
 #define GAME_SPEEDUP_FACTOR 1.25
 #define GAME_LEVEL_UP_MODULO 3
 
-#define SCORE_CLK_SPEED 1
-
 #define SEGMENT_PIN_01 0
 #define SEGMENT_PIN_02 1
 #define SEGMENT_PIN_04 2
@@ -271,7 +269,7 @@ void display_score()
     score_next_digit %= 3;
     
     score_divisor *= 10;
-    if (score_divisor == 10000)
+    if (score_divisor == 1000)
         score_divisor = 1;
 }
 
@@ -374,6 +372,9 @@ void print_game_state(void)
 
 void loop()
 { 
+    uint8_t pressed_button_old = 0;
+    uint8_t pressed_button_new = 0;
+  
     for (;;)
     {
         drop_stone_one_pixel();
@@ -381,7 +382,30 @@ void loop()
         {
             for (uint8_t j = 0; j < 25 / game_speedup; j++)
             {
-                check_input_buttons();
+                pressed_button_new = check_input_buttons();
+                if (pressed_button_old != pressed_button_new)
+                {
+                    switch(pressed_button_new)
+                    {
+                        case 1:
+                            rotate_left();
+                            break;
+
+                        case 2:
+                            move_left();
+                            break;
+
+                        case 3:
+                            move_right();
+                            break;
+
+                        case 4:
+                            rotate_right();
+                            break;
+                    }
+                    pressed_button_old = pressed_button_new;
+                }
+                
                 delay(5);
                 display_score();
             }
@@ -758,32 +782,32 @@ void remove_filled_row(uint8_t row)
     }
 }
 
-void check_input_buttons()
+uint8_t check_input_buttons()
 {
     int keyVal1 = analogRead(A0); //TODO durch hardware-nahen Code ersetzen
 
     if (keyVal1 == 1023)
     {
-        rotate_left();
+        return 1;
     }
 
     else if (keyVal1 >= 990 && keyVal1 <= 1010)
     {
-        move_left();
+        return 2;
     }
 
     else if (keyVal1 >= 505 && keyVal1 <= 515)
     {
-        move_right();
+        return 3;
     }
 
     else if (keyVal1 >= 5 && keyVal1 <= 10)
     {
-        rotate_right();
+        return 4;
     }
 
     else
     {
-        ;
+        return 0;
     }
 }
