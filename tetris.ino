@@ -57,7 +57,6 @@ Pixel pixel_default;
 Pixel game_state[ROWS][COLUMNS];
 Current_Stone current_stone;      // tetorid, that moves
 Current_Stone current_stone_test; // collision test object
-Stone_Matrix replacement;         // memory region for rotation
 
 bool game_over_reached = false;
 bool invisible_game_state = false;
@@ -332,35 +331,33 @@ void render_stone_matrix()
 
 void rotate_right()
 {
-    if (current_stone_test.order == 3)
+    if (current_stone.order == 3)
     {
-        for (uint8_t row = 0; row < current_stone_test.order; row++)
+        for (uint8_t row = 0; row < 3; row++)
         {
-            for (uint8_t col = 0; col < current_stone_test.order; col++)
+            for (uint8_t col = 0; col < 3; col++)
             {
-                replacement.s3.stone[row][col] = current_stone_test.matrix.s3.stone[col][current_stone_test.order - 1 - row];
+                current_stone_test.matrix.s3.stone[row][col] = current_stone.matrix.s3.stone[col][2 - row];
             }
         }
         
-        current_stone_test.matrix = replacement;
         process_move();
     }
 }
 
 void rotate_left()
 {
-    if (current_stone_test.order == 3)
+    if (current_stone.order == 3)
     {
-        for (uint8_t row = 0; row < current_stone_test.order; row++)
+        for (uint8_t row = 0; row < 3; row++)
         {
-            for (uint8_t col = 0; col < current_stone_test.order; col++)
+            for (uint8_t col = 0; col < 3; col++)
             {
-                replacement.s3.stone[col][current_stone_test.order - 1 -row] = current_stone_test.matrix.s3.stone[row][col];
+                current_stone_test.matrix.s3.stone[col][2 - row] = current_stone.matrix.s3.stone[row][col];
             }
         }
         
-        current_stone_test.matrix = replacement;
-        process_move(); // wahrscheinlich muss das nur im if-zweig ausgeführt werden
+        process_move();
     }
 }
 
