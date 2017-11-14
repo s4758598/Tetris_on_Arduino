@@ -11,7 +11,7 @@
 #define ROWS 8
 #define COLUMNS 5
 #define GAME_SPEEDUP_FACTOR 1.25
-#define GAME_LEVEL_UP_MODULO 3
+#define GAME_LEVEL_UP_MODULO 1
 #define INVISIBLE_GAME_STATE_LEVEL_MODULO 3 
 
 typedef struct
@@ -168,6 +168,20 @@ void loop()
                 }
             }
             render();
+        }
+    }
+}
+
+void level_up_animation()
+{
+    uint8_t led_num = 0;
+    for (uint8_t row = 0; row < ROWS; row++)
+    {
+        for (uint8_t col = 0; col < COLUMNS; col++)
+        {
+            led_matrix.setPixelColor(led_num++, 51, 255, 255);
+            led_matrix.show();
+            write_number_to_segment_display(score);
         }
     }
 }
@@ -534,12 +548,10 @@ void remove_filled_rows()
 
     if (level_up_reached)
     {
+        level_up_animation();
         level++;
-        if (level % INVISIBLE_GAME_STATE_LEVEL_MODULO == 0)
-        {
-            invisible_game_state = true;
-        }
-        
+        invisible_game_state = (level % INVISIBLE_GAME_STATE_LEVEL_MODULO == 0) ? true : false;
+
         create_next_level();
         music_speedup += MUSIC_SPEEDUP_FACTOR;
         game_speedup *= GAME_SPEEDUP_FACTOR;
