@@ -12,7 +12,7 @@ static uint8_t music_counter = 0;
 static uint8_t music_part = 0;
 float music_speedup = 1.0;
 
-void setup_music_timer()
+void setup_music()
 {
     cli();
 

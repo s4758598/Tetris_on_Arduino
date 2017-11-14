@@ -1,3 +1,7 @@
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "Arduino.h"
 #include <Adafruit_NeoPixel.h>
 
 #include "music.h"
@@ -55,8 +59,6 @@ Current_Stone current_stone_test; // collision test object
 Stone_Matrix replacement;         // memory region for rotation
 
 bool game_over_reached = false;
-bool stone_is_placed = false;
-
 float game_speedup = 2.0;
 uint16_t score = 0;
 
@@ -64,7 +66,7 @@ Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, LED_DISPLAY_PIN, NEO_GRB + 
 
 void setup()
 {
-    setup_music_timer();
+    setup_music();
     
     led_matrix.begin();
     led_matrix.setBrightness(5);
@@ -267,12 +269,13 @@ void render()
 {
     led_matrix.clear();
     render_game_state();
+    
     if (current_stone.visible)
     {
         render_stone_matrix();
     }
+    
     led_matrix.show();
-    //print_game_state();
 }
 
 void render_game_state()
@@ -287,6 +290,7 @@ void render_game_state()
             {
                 led_matrix.setPixelColor(led_num, game_state[row][col].color.r, game_state[row][col].color.g, game_state[row][col].color.b); //TODO
             }
+            
             led_num++;
         }
     }
@@ -310,12 +314,14 @@ void render_stone_matrix()
                         led_matrix.setPixelColor(led_num,current_stone.color.r, current_stone.color.g, current_stone.color.b);
                     }
                     break;
+
                 case 2:
                     if (current_stone.matrix.s2.stone[row][col] == true)
                     {
                         led_matrix.setPixelColor(led_num,current_stone.color.r, current_stone.color.g, current_stone.color.b);
                     }
                     break;
+
                 }
             }
         }
@@ -377,6 +383,7 @@ bool collides()
                         return true;
                     }
                     break;
+
                 case 2:
                     if (game_state[row +current_stone_test.y_offset][col + current_stone_test.x_offset].active &&
                         current_stone_test.matrix.s2.stone[row][col])
@@ -404,18 +411,18 @@ bool is_out_of_bounds()
             {
                 switch (current_stone_test.order)
                 {
-                case 3:
-                    if (current_stone_test.matrix.s3.stone[row][col])
-                    {
-                        return true;
-                    }
-                    break;
-                case 2:
-                    if (current_stone_test.matrix.s2.stone[row][col])
-                    {
-                        return true;
-                    }
-                    break;
+                    case 3:
+                        if (current_stone_test.matrix.s3.stone[row][col])
+                        {
+                            return true;
+                        }                       
+                        break;
+                    case 2:
+                        if (current_stone_test.matrix.s2.stone[row][col])
+                        {
+                            return true;
+                        }
+                        break;
                 }
             }
         }
@@ -446,6 +453,7 @@ void write_into_game_state()
                         }
                     }
                     break;
+
                 case 2:
                     if (current_stone.matrix.s2.stone[row][col])
                     {

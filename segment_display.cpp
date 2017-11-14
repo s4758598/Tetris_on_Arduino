@@ -1,5 +1,5 @@
 #include "segment_display.h"
-#include <avr/io.h>
+#include "digital_pin_functions.h"
 
 uint8_t SEGMENT_LETTER_PINS[] = {SEGMENT_LETTER_A, SEGMENT_LETTER_B, SEGMENT_LETTER_C, SEGMENT_LETTER_D, SEGMENT_LETTER_E, SEGMENT_LETTER_F, SEGMENT_LETTER_G};
 uint8_t SEGMENT_DIGIT_PINS[] = {SEGMENT_DIGIT_PIN_1, SEGMENT_DIGIT_PIN_2, SEGMENT_DIGIT_PIN_3, SEGMENT_DIGIT_PIN_4};
@@ -14,59 +14,6 @@ void setup_segment_display()
     for(uint8_t i=0; i < 4; i++)
     {
         configure_digital_pin_as_output(SEGMENT_DIGIT_PINS[i]);
-    }
-}
-
-void configure_digital_pin_as_output(uint8_t pin)
-{    
-    if (pin < 8)
-    {
-        DDRD |= (1 << pin);
-    }
-    
-    else if (pin > 7 && pin < 14)
-    {
-        DDRB |= (1 << (pin - 8));
-    }
-}
-
-static inline void set_digital_pin_output_high(uint8_t pin)
-{
-    if (pin < 8)
-    {
-        PORTD |= (1 << pin);
-    }
-    
-    else if (pin > 7 && pin < 14)
-    {
-        PORTB |= (1 << (pin % 8));
-    }
-}
-
-static inline void set_digital_pin_output_low(uint8_t pin)
-{
-    if (pin < 8)
-    {
-        PORTD &= ~(1 << pin);
-    }
-    
-    else if (pin > 7 && pin < 14)
-    {
-        PORTB &= ~(1 << (pin % 8));
-    }
-}
-
-void set_digital_pin_output_value(uint8_t pin, uint8_t value)
-{
-    switch(value)
-    {
-        case 0:
-            set_digital_pin_output_low(pin);
-            break;
-
-        case 1:
-            set_digital_pin_output_high(pin);
-            break;
     }
 }
 

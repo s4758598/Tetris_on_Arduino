@@ -28,10 +28,6 @@
 
 void setup_segment_display();
 
-void configure_digital_pin_as_output(uint8_t pin);
-
-void set_digital_pin_output_value(uint8_t pin, uint8_t value);
-
 void write_digit_to_segment_display_position(uint8_t digit, uint8_t position);
 
 void write_number_to_segment_display(uint16_t n);
