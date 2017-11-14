@@ -43,6 +43,7 @@ typedef struct
     uint8_t order;
     int8_t x_offset;
     int8_t y_offset;
+    bool visible;
     Color color;
 } Current_Stone;
 
@@ -51,7 +52,7 @@ Pixel pixel_default;
 Pixel game_state[ROWS][COLUMNS];
 Current_Stone current_stone;      // tetorid, that moves
 Current_Stone current_stone_test; // collision test object
-Stone_Matrix replacement; // memory region for rotation
+Stone_Matrix replacement;         // memory region for rotation
 
 bool game_over_reached = false;
 bool stone_is_placed = false;
@@ -156,7 +157,7 @@ void loop()
                 }
                 
                 delay(5);
-                display_number_on_segment_display(score);
+                write_number_to_segment_display(score);
 
                 if (game_over_reached)
                 {
@@ -172,7 +173,7 @@ void game_over()
 {
     for(;;)
     {
-        display_number_on_segment_display(score);
+        write_number_to_segment_display(score);
         delay(5);
     }
 }
@@ -258,15 +259,15 @@ void create_new_stone()
     
     current_stone.y_offset = ROWS;
     current_stone.x_offset = 1;
+    current_stone.visible = true;
     current_stone_test = current_stone;
-    stone_is_placed = true;
 }
 
 void render()
 {
     led_matrix.clear();
     render_game_state();
-    if (stone_is_placed)
+    if (current_stone.visible)
     {
         render_stone_matrix();
     }
@@ -462,7 +463,7 @@ void write_into_game_state()
         }
     }
     
-    stone_is_placed = false;
+    current_stone.visible = false;
     remove_filled_rows();
     render();
     create_new_stone();

@@ -17,7 +17,7 @@ void setup_segment_display()
     }
 }
 
-static void configure_digital_pin_as_output(uint8_t pin)
+void configure_digital_pin_as_output(uint8_t pin)
 {    
     if (pin < 8)
     {
@@ -30,21 +30,7 @@ static void configure_digital_pin_as_output(uint8_t pin)
     }
 }
 
-static void set_digital_pin(uint8_t pin, uint8_t value)
-{
-    switch(value)
-    {
-        case 0:
-            set_digital_pin_low(pin);
-            break;
-
-        case 1:
-            set_digital_pin_high(pin);
-            break;
-    }
-}
-
-static inline void set_digital_pin_high(uint8_t pin)
+static inline void set_digital_pin_output_high(uint8_t pin)
 {
     if (pin < 8)
     {
@@ -57,7 +43,7 @@ static inline void set_digital_pin_high(uint8_t pin)
     }
 }
 
-static inline void set_digital_pin_low(uint8_t pin)
+static inline void set_digital_pin_output_low(uint8_t pin)
 {
     if (pin < 8)
     {
@@ -70,15 +56,17 @@ static inline void set_digital_pin_low(uint8_t pin)
     }
 }
 
-void write_number_to_segment_display(uint16_t n)
-{   
-    n = n % 10000; 
-    uint16_t divisor = 1;
-    
-    for(uint8_t i=1; i < 5; i++)
+void set_digital_pin_output_value(uint8_t pin, uint8_t value)
+{
+    switch(value)
     {
-        write_digit_to_segment_display_position((n/divisor) % 10, 5 - i);
-        divisor *= 10;
+        case 0:
+            set_digital_pin_output_low(pin);
+            break;
+
+        case 1:
+            set_digital_pin_output_high(pin);
+            break;
     }
 }
 
@@ -86,7 +74,7 @@ static void write_position_vector_to_segment_display(uint8_t position)
 {
     for(uint8_t i=0; i<4; i++)
     {
-        set_digital_pin(SEGMENT_DIGIT_PINS[i], position & 1);
+        set_digital_pin_output_value(SEGMENT_DIGIT_PINS[i], position & 1);
         position = position >> 1;
     }
 }
@@ -95,7 +83,7 @@ static void write_digit_vector_to_segment_display(uint8_t digit)
 {
     for(uint8_t i=0; i<7; i++)
     {
-        set_digital_pin(SEGMENT_LETTER_PINS[i], digit & 1);
+        set_digital_pin_output_value(SEGMENT_LETTER_PINS[i], digit & 1);
         digit = digit >> 1;
     }
 }
@@ -178,7 +166,7 @@ void write_digit_to_segment_display_position(uint8_t digit, uint8_t position)
     write_digit_to_segment_display(digit);
 }
 
-void display_number_on_segment_display(uint16_t n)
+void write_number_to_segment_display(uint16_t n)
 {
     static uint16_t divisor = 1;
     static uint8_t next_digit = 0;
@@ -223,4 +211,3 @@ void display_number_on_segment_display(uint16_t n)
       }
     }
 }
-
