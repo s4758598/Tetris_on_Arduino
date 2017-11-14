@@ -12,6 +12,7 @@
 #define COLUMNS 5
 #define GAME_SPEEDUP_FACTOR 1.25
 #define GAME_LEVEL_UP_MODULO 3
+#define INVISIBLE_GAME_STATE_LEVEL_MODULO 3 
 
 typedef struct
 {
@@ -59,6 +60,7 @@ Current_Stone current_stone_test; // collision test object
 Stone_Matrix replacement;         // memory region for rotation
 
 bool game_over_reached = false;
+bool invisible_game_state = false;
 float game_speedup = 2.0;
 uint16_t score = 0;
 
@@ -432,7 +434,7 @@ bool is_out_of_bounds()
 }
 
 void write_into_game_state()
-{
+{   
     for (uint8_t row = 0; row < current_stone.order; row++)
     {
         for (uint8_t col = 0; col < current_stone.order; col++)
@@ -445,7 +447,7 @@ void write_into_game_state()
                     if (current_stone.matrix.s3.stone[row][col])
                     {
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
-                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = (invisible_game_state) ? color_default : current_stone.color;
 
                         if(current_stone.y_offset + row == ROWS - 1)
                         {
@@ -458,7 +460,7 @@ void write_into_game_state()
                     if (current_stone.matrix.s2.stone[row][col])
                     {
                         game_state[row + current_stone.y_offset][col + current_stone.x_offset].active = true;
-                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = current_stone.color;
+                        game_state[row + current_stone.y_offset][col + current_stone.x_offset].color = (invisible_game_state) ? color_default : current_stone.color;
 
                         if(current_stone.y_offset + row == ROWS - 1)
                         {
@@ -471,7 +473,7 @@ void write_into_game_state()
         }
     }
     
-    current_stone.visible = false;
+    current_stone.visible = (game_over_reached) ? true : false;
     remove_filled_rows();
     render();
     create_new_stone();
@@ -536,6 +538,11 @@ void remove_filled_rows()
     if (level_up_reached)
     {
         level++;
+        if (level % INVISIBLE_GAME_STATE_LEVEL_MODULO == 0)
+        {
+            invisible_game_state = true;
+        }
+        
         create_next_level();
         music_speedup += MUSIC_SPEEDUP_FACTOR;
         game_speedup *= GAME_SPEEDUP_FACTOR;
