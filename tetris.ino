@@ -1,3 +1,25 @@
+/*
+ * Copyright (c) 2017 Richard Arnold
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -57,6 +79,7 @@ Pixel pixel_default;
 Pixel game_state[ROWS][COLUMNS];
 Current_Stone current_stone;      // tetorid, that moves
 Current_Stone current_stone_test; // collision test object
+Stone_Matrix replacement;         // memory region for rotation
 
 bool game_over_reached = false;
 bool invisible_game_state = false;
@@ -345,6 +368,24 @@ void render_stone_matrix()
 
 void rotate_right()
 {
+    if (current_stone_test.order == 3)
+     {
+        for (uint8_t row = 0; row < current_stone_test.order; row++)
+        {
+            for (uint8_t col = 0; col < current_stone_test.order; col++)
+             {
+                replacement.s3.stone[row][col] = current_stone_test.matrix.s3.stone[col][current_stone_test.order - 1 - row];
+             }
+         }
+         
+        current_stone_test.matrix = replacement;
+        process_move();
+     }
+}
+
+/*
+void rotate_right()
+{
     if (current_stone.order == 3)
     {
         for (uint8_t row = 0; row < 3; row++)
@@ -358,7 +399,26 @@ void rotate_right()
         process_move();
     }
 }
+*/
 
+void rotate_left()
+{
+    if (current_stone_test.order == 3)
+     {
+        for (uint8_t row = 0; row < current_stone_test.order; row++)
+         {
+            for (uint8_t col = 0; col < current_stone_test.order; col++)
+             {
+                replacement.s3.stone[col][current_stone_test.order - 1 -row] = current_stone_test.matrix.s3.stone[row][col];
+             }
+         }
+         
+        current_stone_test.matrix = replacement;
+        process_move(); // wahrscheinlich muss das nur im if-zweig ausgeführt werden
+     }
+}
+
+/*
 void rotate_left()
 {
     if (current_stone.order == 3)
@@ -374,6 +434,7 @@ void rotate_left()
         process_move();
     }
 }
+*/
 
 //returns true if stone would collide
 bool collides()
