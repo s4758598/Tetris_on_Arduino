@@ -23,6 +23,12 @@
 #pragma once
 #include <stdint.h>
 
+/*
+ * A fast alternative to pinMode(<PIN>, OUTPUT) for the ATmega328P.
+ */
 void configure_digital_pin_as_output(uint8_t pin);
 
+/*
+ * A fast alternative to digitalWrite(<PIN>, <VALUE>) for the ATmega328P.
+ */
 void set_digital_pin_output_value(uint8_t pin, uint8_t value);

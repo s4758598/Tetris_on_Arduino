@@ -184,7 +184,6 @@ void write_digit_to_segment_display_position(uint8_t digit, uint8_t position)
  *  and positions repeatedly -- and that is exactly the purpose of this function:
  *  If called multiple times (e.G. within a loop or an timer ISR), it can display
  *  any number up to four digits.
- *  
  */
 void write_number_to_segment_display(uint16_t n)
 {
