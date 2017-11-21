@@ -24,21 +24,26 @@
 #include "music.h"
 #include <avr/interrupt.h>
 
-static const uint16_t MUSIC_PART_A_FREQUENCIES[]= {659, 494, 523, 587, 659, 587, 523, 494, 440, 440, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0, 587, 698, 880, 784, 698, 659, 659, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0};
-static const uint16_t MUSIC_PART_A_DURATIONS[]  = {4, 8, 8, 8, 16, 16, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 2, 8, 4, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 4, 4};
+#define MUSIC_PART_A_LENGTH 43
+#define MUSIC_PART_B_LENGTH 16
 
-static const uint16_t MUSIC_PART_B_FREQUENCIES[] = {330, 262, 294, 247, 262, 220, 208, 247, 330, 262, 294, 247, 262, 330, 440, 415};
-static const uint16_t MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 2, 1};
+const uint16_t MUSIC_PART_A_FREQUENCIES[]= {659, 494, 523, 587, 659, 587, 523, 494, 440, 440, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0, 587, 698, 880, 784, 698, 659, 659, 523, 659, 587, 523, 494, 494, 523, 587, 659, 523, 440, 440, 0};
+const uint16_t MUSIC_PART_A_DURATIONS[]  = {4, 8, 8, 8, 16, 16, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 2, 8, 4, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 8, 8, 4, 4, 4, 4, 4, 4};
 
-static uint8_t music_counter = 0;
-static uint8_t music_part = 0;
+const uint16_t MUSIC_PART_B_FREQUENCIES[] = {330, 262, 294, 247, 262, 220, 208, 247, 330, 262, 294, 247, 262, 330, 440, 415};
+const uint16_t MUSIC_PART_B_DURATIONS[] = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 2, 1};
+
+uint8_t music_counter = 0;
+uint8_t music_part = 0;
 float music_speedup = 1.0;
 
+/*
+ * Enables a CTC interrupt on timer1 with a 1012 prescaler
+ */
 void setup_music()
 {
     cli();
 
-    // Enable CTC interrupt on timer1 with 1024 prescaler
     TCCR1A = 0;
     TCCR1B = 13; // set CS10 and CS12 bits for 1024 prescaler and WGM12 for CTC mode (see p. 173, 172)
     TIMSK1 = 2;  // set OCIEA and enable "Output Compare A Match Interrupt" for timer 1 (see p. 184)
@@ -47,6 +52,11 @@ void setup_music()
     sei();
 }
 
+/*
+ * The ISR plays music by iterating through arrays which specify the frequency and the relative 
+ * duration of a note. The implementation favors speed above size in order to keep the interruption
+ * short.
+ */
 ISR(TIMER1_COMPA_vect)
 {
     if (music_part == 0)
