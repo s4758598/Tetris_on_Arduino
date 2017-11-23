@@ -29,7 +29,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "Arduino.h"
 #include <Adafruit_NeoPixel.h>
 
 #include "music.h"
