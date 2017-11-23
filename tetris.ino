@@ -29,7 +29,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "Arduino.h"
 #include <Adafruit_NeoPixel.h>
 
 #include "music.h"
@@ -88,10 +87,7 @@ Pixel game_state[ROWS][COLUMNS];
 Current_Stone current_stone;
 
 // collision test object
-Current_Stone current_stone_test;
-
-// memory region for rotation
-Stone_Matrix replacement;        
+Current_Stone current_stone_test;     
 
 //describes wether or not the game is over
 bool game_over_reached = false;
@@ -402,24 +398,6 @@ void render_stone_matrix()
 
 void rotate_right()
 {
-    if (current_stone_test.order == 3)
-     {
-        for (uint8_t row = 0; row < current_stone_test.order; row++)
-        {
-            for (uint8_t col = 0; col < current_stone_test.order; col++)
-             {
-                replacement.s3.stone[row][col] = current_stone_test.matrix.s3.stone[col][current_stone_test.order - 1 - row];
-             }
-         }
-         
-        current_stone_test.matrix = replacement;
-        process_move();
-     }
-}
-
-/*
-void rotate_right()
-{
     if (current_stone.order == 3)
     {
         for (uint8_t row = 0; row < 3; row++)
@@ -433,26 +411,7 @@ void rotate_right()
         process_move();
     }
 }
-*/
 
-void rotate_left()
-{
-    if (current_stone_test.order == 3)
-     {
-        for (uint8_t row = 0; row < current_stone_test.order; row++)
-         {
-            for (uint8_t col = 0; col < current_stone_test.order; col++)
-             {
-                replacement.s3.stone[col][current_stone_test.order - 1 -row] = current_stone_test.matrix.s3.stone[row][col];
-             }
-         }
-         
-        current_stone_test.matrix = replacement;
-        process_move(); // wahrscheinlich muss das nur im if-zweig ausgeführt werden
-     }
-}
-
-/*
 void rotate_left()
 {
     if (current_stone.order == 3)
@@ -468,7 +427,6 @@ void rotate_left()
         process_move();
     }
 }
-*/
 
 //returns true if stone would collide
 bool collides()
