@@ -22,8 +22,7 @@
  
 
 /*
- * INTRODUCTION and general thouhts:
- * This Project is inspired by the well known game tetris   
+ * This Project is inspired by tetris, a well known game created by Alexey Pajitnov. 
  */
 
 #include <stdint.h>
@@ -81,27 +80,27 @@ typedef struct
 
 Color color_default;
 Pixel pixel_default;
-Pixel game_state[ROWS][COLUMNS];
 
-// tetorid, that moves
+/* Struct representing the tetroid, which can be moved and rotated by the player */
 Current_Stone current_stone;
 
-// collision test object
+/* Struct containing collided tetorids */
+Pixel game_state[ROWS][COLUMNS];
+
+/* Collision test object */
 Current_Stone current_stone_test;     
 
-//describes wether or not the game is over
+uint8_t level = 1;
+uint16_t score = 0;
+float game_speedup = 2.0;
 bool game_over_reached = false;
 
-uint8_t level = 1;
-//in the gamestate the tetroids which cant drop any further are stored there
-//if invisible_game_state == true then you play with invisible gamestate
+/* Determines, whether the game_state will be visible or not */
 bool invisible_game_state = false;
-float game_speedup = 2.0;
-uint16_t score = 0;
-//abstraction for the LED board 
+
 Adafruit_NeoPixel led_matrix = Adafruit_NeoPixel(40, LED_DISPLAY_PIN, NEO_GRB + NEO_KHZ800);
 
-//Arduino method which is called once at start of the mc to setup the system
+/* Arduino method, which is called once at start of the mc to setup the system */
 void setup()
 {
     setup_music();
@@ -113,7 +112,7 @@ void setup()
     setup_game();
 }
 
-//initializes tetris logic
+/* Initializes tetris logic */
 void setup_game()
 {
     led_matrix.clear();
@@ -122,7 +121,6 @@ void setup_game()
     led_matrix.show();
 }
 
-//jumps to next level
 void create_next_level()
 {
     setup_game();
@@ -163,8 +161,10 @@ void game_over()
     }
 }
 
-//rotations, dropping and right or left moving a stone is done on a teststate
-//here this teststate gets validated and will be commited, otherwise teststate will be discarded
+/* 
+ * All rotations and move actions (left, right, down) are tested on curent_stone_test.
+ * If a modification is valid, it will be commited, otherwise the action will be discarded.
+ */
 void process_move()
 {
   if (collides())
@@ -195,8 +195,8 @@ void move_left()
     current_stone_test.x_offset--;
     process_move();
 }
-// standard arduino method 
-// this is the mainroutine 
+
+/* Standard arduino function called after setup(). This is the main routine of the game. */
 void loop()
 { 
     uint8_t pressed_button_old = 0;
@@ -255,7 +255,7 @@ void loop()
     }
 }
 
-//assigns a new random stone
+/* Assigns a random tetroid and other related values to current_stone. */
 void create_new_stone()
 {
     switch (random(7))
@@ -341,7 +341,7 @@ void create_new_stone()
     current_stone_test = current_stone;
 }
 
-//renders the gamestate and current active stone
+/* Renders game_state and current_stone */
 void render()
 {
     led_matrix.clear();
@@ -349,7 +349,7 @@ void render()
     
     if (current_stone.visible)
     {
-        render_stone_matrix();
+        render_current_stone();
     }
     
     led_matrix.show();
@@ -378,7 +378,7 @@ void render_game_state()
     }
 }
 
-void render_stone_matrix()
+void render_current_stone()
 {
     uint8_t led_num;
     for (uint8_t col = 0; col < current_stone.order; col++)
@@ -442,7 +442,7 @@ void rotate_left()
     }
 }
 
-//returns true if stone would collide
+/* Returns true if current_stone_test collides with game_state */
 bool collides()
 {
     for (uint8_t row = 0; row < current_stone_test.order; row++)
@@ -511,8 +511,7 @@ bool is_out_of_bounds()
     return false;
 }
 
-//writes stone into the gamestate
-void write_into_game_state()
+void write_current_stone_into_game_state()
 {   
     for (uint8_t row = 0; row < current_stone.order; row++)
     {
@@ -563,7 +562,7 @@ void drop_stone_one_pixel()
     current_stone_test.y_offset--;
     if (collides())
     {
-        write_into_game_state();
+        write_current_stone_into_game_state();
     }
 
     else
@@ -572,7 +571,6 @@ void drop_stone_one_pixel()
     }
 }
 
-//empties the gamestate 
 void clear_game_state()
 {
     for (uint8_t col = 0; col < COLUMNS; col++)
@@ -585,7 +583,7 @@ void clear_game_state()
     }
 }
 
-//checks gamestate for full rows and removes them 
+/* Checks game_state for full rows and removes them */
 void remove_filled_rows()
 {
     bool level_up_reached = false;
@@ -671,7 +669,7 @@ uint8_t check_input_buttons()
     }
 }
 
-//since debugging is only possible with atmelstudio
+/* Handy debugging function used for visible feedback */
 void debugPixel(){
     led_matrix.setPixelColor(32, 0, 255, 0);
     led_matrix.show();
