@@ -37,9 +37,7 @@ uint8_t music_counter = 0;
 uint8_t music_part = 0;
 float music_speedup = 1.0;
 
-/*
- * Enables a CTC interrupt on timer1 with a 1012 prescaler
- */
+/* Enables a CTC interrupt on timer1 with a 1012 prescaler */
 void setup_music()
 {
     cli();

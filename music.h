@@ -28,9 +28,7 @@
 
 extern float music_speedup;
 
-/*
- * Enables a CTC interrupt on timer1 with a 1012 prescaler.
- */
+/* Enables a CTC interrupt on timer1 with a 1012 prescaler */
 void setup_music();
 
  

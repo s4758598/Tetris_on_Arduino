@@ -23,7 +23,7 @@
 #pragma once
 #include <stdint.h>
 
-/* Segment display pin to arduino digital pin mapping*/
+/* Segment display pin to arduino digital pin mapping */
 #define SEGMENT_DISPLAY_PIN_01 0
 #define SEGMENT_DISPLAY_PIN_02 1
 #define SEGMENT_DISPLAY_PIN_04 2
@@ -36,7 +36,7 @@
 #define SEGMENT_DISPLAY_PIN_11 9
 #define SEGMENT_DISPLAY_PIN_12 10
 
-/* Segment display letter to segment display pin mapping*/
+/* Segment display letter to segment display pin mapping */
 #define SEGMENT_DISPLAY_LETTER_A SEGMENT_DISPLAY_PIN_11
 #define SEGMENT_DISPLAY_LETTER_B SEGMENT_DISPLAY_PIN_07
 #define SEGMENT_DISPLAY_LETTER_C SEGMENT_DISPLAY_PIN_04
@@ -45,7 +45,7 @@
 #define SEGMENT_DISPLAY_LETTER_F SEGMENT_DISPLAY_PIN_10
 #define SEGMENT_DISPLAY_LETTER_G SEGMENT_DISPLAY_PIN_05
 
-/* Segment display digit to segment display pin mapping*/
+/* Segment display digit to segment display pin mapping */
 #define SEGMENT_DISPLAY_DIGIT_POSITION_PIN_1 SEGMENT_DISPLAY_PIN_12
 #define SEGMENT_DISPLAY_DIGIT_POSITION_PIN_2 SEGMENT_DISPLAY_PIN_09
 #define SEGMENT_DISPLAY_DIGIT_POSITION_PIN_3 SEGMENT_DISPLAY_PIN_08
