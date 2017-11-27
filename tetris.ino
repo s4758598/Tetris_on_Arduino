@@ -46,13 +46,13 @@ typedef struct
     uint8_t r = 0;
     uint8_t g = 0;
     uint8_t b = 0;
-}Color;
+} Color;
 
 typedef struct
 {
     bool active = false;
     Color color;
-}Pixel;
+} Pixel;
 
 typedef struct
 {
@@ -91,8 +91,10 @@ Current_Stone current_stone_test;
 
 //describes wether or not the game is over
 bool game_over_reached = false;
+
+uint8_t level = 1;
 //in the gamestate the tetroids which cant drop any further are stored there
-//if invisible_game_state== true then you play with invisible gamestate
+//if invisible_game_state == true then you play with invisible gamestate
 bool invisible_game_state = false;
 float game_speedup = 2.0;
 uint16_t score = 0;
@@ -111,20 +113,54 @@ void setup()
     setup_game();
 }
 
-//initializes tetrislogic relevant things
+//initializes tetris logic
 void setup_game()
 {
+    led_matrix.clear();
     clear_game_state();
     create_new_stone();
     led_matrix.show();
 }
 
-//jumps to next level and by that improoves droppingspeed
+//jumps to next level
 void create_next_level()
 {
-    led_matrix.clear();
     setup_game();
     render();
+}
+
+void level_up()
+{
+    level++;
+    animate_level_up();
+
+    invisible_game_state = (level % INVISIBLE_GAME_STATE_LEVEL_MODULO == 0) ? true : false;    
+    music_speedup += MUSIC_SPEEDUP_FACTOR;
+    game_speedup *= GAME_SPEEDUP_FACTOR;
+    create_next_level();
+}
+
+void animate_level_up()
+{
+    uint8_t led_num = 0;
+    for (uint8_t row = 0; row < ROWS; row++)
+    {
+        for (uint8_t col = 0; col < COLUMNS; col++)
+        {
+            led_matrix.setPixelColor(led_num++, 51, 255, 255);
+            led_matrix.show();
+            write_number_to_segment_display(score);
+        }
+    }
+}
+
+void game_over()
+{
+    for(;;)
+    {
+        write_number_to_segment_display(score);
+        delay(5);
+    }
 }
 
 //rotations, dropping and right or left moving a stone is done on a teststate
@@ -219,29 +255,6 @@ void loop()
     }
 }
 
-void animate_levelup()
-{
-    uint8_t led_num = 0;
-    for (uint8_t row = 0; row < ROWS; row++)
-    {
-        for (uint8_t col = 0; col < COLUMNS; col++)
-        {
-            led_matrix.setPixelColor(led_num++, 51, 255, 255);
-            led_matrix.show();
-            write_number_to_segment_display(score);
-        }
-    }
-}
-
-void game_over()
-{
-    for(;;)
-    {
-        write_number_to_segment_display(score);
-        delay(5);
-    }
-}
-
 //assigns a new random stone
 void create_new_stone()
 {
@@ -327,6 +340,7 @@ void create_new_stone()
     current_stone.visible = true;
     current_stone_test = current_stone;
 }
+
 //renders the gamestate and current active stone
 void render()
 {
@@ -575,7 +589,6 @@ void clear_game_state()
 void remove_filled_rows()
 {
     bool level_up_reached = false;
-    static uint8_t level = 1;
     static uint8_t rows_cleared = 0;
   
     for (uint8_t row = 0; row < ROWS; row++)
@@ -604,13 +617,7 @@ void remove_filled_rows()
 
     if (level_up_reached)
     {
-        animate_levelup();
-        level++;
-        invisible_game_state = (level % INVISIBLE_GAME_STATE_LEVEL_MODULO == 0) ? true : false;
-
-        create_next_level();
-        music_speedup += MUSIC_SPEEDUP_FACTOR;
-        game_speedup *= GAME_SPEEDUP_FACTOR;
+        level_up();
     }
 }
 
@@ -636,7 +643,7 @@ void shift_rows_down_starting_from(uint8_t row)
 
 uint8_t check_input_buttons()
 {
-    int keyVal1 = analogRead(A0); //TODO durch hardware-nahen Code ersetzen
+    int keyVal1 = analogRead(A0);
 
     if (keyVal1 == 1023)
     {
