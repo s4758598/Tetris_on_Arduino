@@ -21,9 +21,7 @@
  */
  
 
-/*
- * This Project is inspired by tetris, a well known game created by Alexey Pajitnov. 
- */
+/* This Project is inspired by tetris, a popular game created by Alexey Pajitnov */
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -34,10 +32,18 @@
 #include "segment_display.h"
 
 #define LED_DISPLAY_PIN 13
+
+/* Specify the dimensions of the game */
 #define ROWS 8
 #define COLUMNS 5
-#define GAME_SPEEDUP_FACTOR 1.25
+
+/* Determines the amount of rows to be cleared to increase the game level by one */
 #define GAME_LEVEL_UP_MODULO 1
+
+/* Determines the game speedup applied by each level up */
+#define GAME_SPEEDUP_FACTOR 1.25
+
+/* Determines the levels with a invisible game_state */
 #define INVISIBLE_GAME_STATE_LEVEL_MODULO 3 
 
 typedef struct
