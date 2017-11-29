@@ -45,7 +45,7 @@ void setup_music()
     TCCR1A = 0;
     TCCR1B = 13; // set CS10 and CS12 bits for 1024 prescaler and WGM12 for CTC mode (see p. 173, 172)
     TIMSK1 = 2;  // set OCIEA and enable "Output Compare A Match Interrupt" for timer 1 (see p. 184)
-    OCR1A = MUSIC_CLK_SPEED; // Output Compare 1 A (16bit register see p.180)
+    OCR1A = 100; // Output Compare 1 A (16bit register see p.180)
 
     sei();
 }

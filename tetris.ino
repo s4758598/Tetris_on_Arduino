@@ -213,16 +213,16 @@ void loop()
     {
         for (uint8_t j = 0; j < 175 / game_speedup; j++)
         {
+            delay(2);
             time = micros();
             pressed_button_new = check_input_buttons();
 
-            delay(2);
             if(!(pressed_button_new == check_input_buttons()))
             {
                 pressed_button_new = 0;
             }
 
-            if (pressed_button_old != pressed_button_new && micros() - time > 300)
+            if (pressed_button_old != pressed_button_new && micros() - time > 100)
             {
                 switch(pressed_button_new)
                 {
