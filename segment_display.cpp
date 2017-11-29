@@ -22,7 +22,6 @@
 
 #include "segment_display.h"
 #include "digital_pin_functions.h"
-
 uint8_t SEGMENT_DISPLAY_LETTER_PINS[] = 
 {
     SEGMENT_DISPLAY_LETTER_PIN_A, 
@@ -208,7 +207,7 @@ void write_number_to_segment_display(uint16_t n)
   
     write_digit_to_segment_display_position((n / divisor) % 10, 4 - next_digit);
     
-    if (n > 10 && n < 100)
+    if (n >= 10 && n < 100)
     {
       next_digit++;
       next_digit %= 2;
@@ -220,7 +219,7 @@ void write_number_to_segment_display(uint16_t n)
       }
     }
 
-    else if (n > 100 && n < 1000)
+    else if (n >= 100 && n < 1000)
     {
       next_digit++;
       next_digit %= 3;
@@ -232,7 +231,7 @@ void write_number_to_segment_display(uint16_t n)
       }
     }
 
-    else if (n > 1000)
+    else if (n >= 1000)
     {
       n = n % 10000; 
       
