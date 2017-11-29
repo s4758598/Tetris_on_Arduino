@@ -882,7 +882,7 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /home/localhost/Projekte/arduino/uni/music_to_array.svg
+	filename figures/music_to_array.svg
 	scale 50
 
 \end_inset
