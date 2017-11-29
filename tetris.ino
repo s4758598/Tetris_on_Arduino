@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Richard Arnold, Georg Alexander Murzik
+ * Copyright (c) 2017 Richard Arnold and Georg Alexander Murzik
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -211,53 +211,53 @@ void loop()
   
     for (;;)
     {
-        drop_stone_one_pixel();
-        for (uint8_t i = 0; i < 7; i++)
+        for (uint8_t j = 0; j < 175 / game_speedup; j++)
         {
-            for (uint8_t j = 0; j < 25 / game_speedup; j++)
+            time = micros();
+            pressed_button_new = check_input_buttons();
+
+            delay(2);
+            if(!(pressed_button_new == check_input_buttons()))
             {
-                time = micros();
-                pressed_button_new = check_input_buttons();
-                delay(10);
-                if(!(pressed_button_new == check_input_buttons())){
-                    pressed_button_new =0;
-                }
-                if (pressed_button_old != pressed_button_new )//&& micros() - time > 100)
-                {
-                    switch(pressed_button_new)
-                    {
-                        case 0:
-                            // do nothing, button debouncing produces unintended behavior
-                            break;
-                        case 1:
-                            rotate_left();
-                            break;
-
-                        case 2:
-                            move_left();
-                            break;
-
-                        case 3:
-                            move_right();
-                            break;
-
-                        case 4:
-                            rotate_right();
-                            break;
-                    }
-                    pressed_button_old = pressed_button_new;
-                }
-                
-                delay(5);
-                write_number_to_segment_display(score);
-
-                if (game_over_reached)
-                {
-                    game_over();
-                }
+                pressed_button_new = 0;
             }
-            render();
+
+            if (pressed_button_old != pressed_button_new && micros() - time > 300)
+            {
+                switch(pressed_button_new)
+                {
+                    case 0:
+                        // do nothing, button debouncing produces unintended behavior
+                        break;
+                    case 1:
+                        rotate_left();
+                        break;
+
+                    case 2:
+                        move_left();
+                        break;
+
+                    case 3:
+                        move_right();
+                        break;
+
+                    case 4:
+                        rotate_right();
+                        break;
+                }
+                pressed_button_old = pressed_button_new;
+            }
+
+            delay(5);
+            write_number_to_segment_display(score);
         }
+        render();
+
+        if (game_over_reached)
+        {
+            game_over();
+        }
+        drop_stone_one_pixel();
     }
 }
 
