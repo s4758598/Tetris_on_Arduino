@@ -30,7 +30,11 @@
 
 % Seitenränder, Seitennummern
 \usepackage{geometry} 
-\geometry{verbose,lmargin=3.0cm, rmargin=2.0cm, tmargin=2.0cm, bmargin=2.0cm}
+% Seitenränder gemäß Leitfaden
+%\geometry{verbose,lmargin=3.0cm, rmargin=2.0cm, tmargin=2.0cm, bmargin=2.0cm}
+
+% Seitenränder für ES
+\geometry{verbose,lmargin=2.0cm, rmargin=2.0cm, tmargin=2.0cm, bmargin=2.0cm}
 
 % Seitenzahl unten rechts
 \usepackage{fancyhdr}
@@ -70,6 +74,7 @@
 %\usepackage[unicode=true,pdfusetitle,pagebackref, bookmarks=true,bookmarksnumbered=false,bookmarksopen=false, breaklinks=false,pdfborder={0 0 0},backref=false,colorlinks=false, hypertexnames=true, hyperfootnotes=true]{hyperref}
 
 %\renewcommand\nomname{Abkürzungsverzeichnis}
+\setlength{\belowcaptionskip}{-10pt}
 \end_preamble
 \use_default_options true
 \maintain_unincluded_children false
@@ -703,8 +708,39 @@ Verbinder
 \end_layout
 
 \end_deeper
-\begin_layout Itemize
-Bildchen
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/breadboard_view.svg
+	lyxscale 50
+	special width=\textwidth
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Hardware Ansicht
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -789,6 +825,46 @@ dann wird geschaut, ob das testobjekt mit dem gamestate kollidieren würde
 wenn nicht wird die transaktion durchgeführt
 \end_layout
 
+\begin_layout Subsubsection
+Foo
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/aktivitaetsdiagramm.svg
+	lyxscale 50
+	clip
+	special width=\textwidth
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Vereinfachtes Aktivitätsdiagram
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
 Musik
 \end_layout
@@ -804,49 +880,63 @@ Abbildung der Musik
 \end_layout
 
 \begin_layout Standard
-Nach anfänglichem Experimenten mit der Arduino-Funktion tone wurde schnell
- klar, d
-\end_layout
-
-\begin_layout Subsubsection
-Abspielen der Musik
-\end_layout
-
-\begin_layout Itemize
 Für die Realisierung der Tetris-Musik, die Form von Klaviernoten vorhanden
  war, wurde zunächst eine Datenstruktur gesucht, in der Musik digital effizient
  abgebildet werden kann.
- 
+ Nach den ersten Versuchen mit der Arduino-Funktion tone
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+fmt
 \end_layout
 
-\begin_deeper
-\begin_layout Itemize
-Nach ersten Erfahrungen mit der Arduino Funktion tone sowie einem Piezo-Baueleme
-nt als Aktor, hat man sich dafür entschieden, Musik mittels zweier Arrays
- umzusetzen, in denen einerseits Tonhöhen als Frequenzen und andererseits
- Tondauern als relative Taktanteile gespeichert werden sollen.
+\end_inset
+
+ sowie einem Piezo-Bauelement als Aktor, wurden Arrays als Datenstruktur
+ gewählt, in denen einerseits Tonhöhen als Frequenzen und andererseits Tondauern
+ als relative Taktanteile gespeichert werden sollen.
 \end_layout
 
-\begin_layout Itemize
-Da eine manuelle Codierung der Musik in das gewählte Zielformat als umständlich
- und fehleranfällig erschien, wurde eine Zwischennotation, also eine weitere
- Abstraktion entwickelt, um die digitale Abbildung der Musik zu vereinfachen:
- Ein CSV-Format, das eine Liste von Tupel der Form (Tonhöhe, Tondauer, Punktieru
-ng) vorsieht.
- Hierbei wurden die Tonhöhe in der sogenannten 
+\begin_layout Standard
+Da eine manuelle Codierung der Musik in das gewählte Zielformat als aufwändig
+ und fehleranfällig erschien, wurde zunächst eine Zwischennotation, also
+ eine weitere Abstraktion, entwickelt, um die digitale Abbildung der Musik
+ zu vereinfachen: Ein CSV-Format, das eine Liste von Tupel der Form (Tonhöhe,
+ Tondauer, Punktierung) vorsieht.
+ Hierbei wurde die Tonhöhe in der 
 \emph on
 Scientific Pitch Notation
 \emph default
-, die Tondauer als ganzzahler Divisor des Taktes und die Punktierung mit
- einem Zeichen codiert.
+,
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+Vgl.
+ 
+\begin_inset CommandInset href
+LatexCommand href
+name "https://en.wikipedia.org/wiki/Scientific_pitch_notation"
+target "https://en.wikipedia.org/wiki/Scientific_pitch_notation"
+
+\end_inset
+
+
 \end_layout
 
-\begin_layout Itemize
+\end_inset
+
+ die Tondauer als ganzzahler Divisor des Taktes und die Punktierung mit
+ einer Flag codiert.
+\end_layout
+
+\begin_layout Standard
 Daraufhin wurde die Melodie von Tetris im gerade beschriebenen CSV-Format
  notiert und ein Programm geschrieben, dass die Zwischenrepräsentation mit
  Hilfe der Ton-Frequenzen von Wikipedia
 \begin_inset Foot
-status open
+status collapsed
 
 \begin_layout Plain Layout
 Vgl.
@@ -862,18 +952,10 @@ target "https://de.wikipedia.org/wiki/Frequenzen_der_gleichstufigen_Stimmung"
 
 \end_inset
 
- in das Zielformat übersetzt, wie Abbildung 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "fig:Übersetzung-von-der"
+ in das Zielformat automatisch übersetzt:
+\end_layout
 
-\end_inset
-
- veranschaulichen soll.
-\begin_inset Newline newline
-\end_inset
-
-
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -882,8 +964,8 @@ status open
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename figures/music_to_array.svg
-	scale 50
+	filename figures/tetris_music_to_array.svg
+	scale 90
 
 \end_inset
 
@@ -900,7 +982,7 @@ name "fig:Übersetzung-von-der"
 
 \end_inset
 
-Übersetzung der Zwischenrepräsentation in die Zielrepräsentation
+ Notationsformen der Musik
 \end_layout
 
 \end_inset
@@ -908,36 +990,30 @@ name "fig:Übersetzung-von-der"
 
 \end_layout
 
-\begin_layout Plain Layout
-
-\end_layout
-
 \end_inset
 
 
 \end_layout
 
-\end_deeper
-\begin_layout Itemize
-Nach der Abbildung der Musik sollte diese nun asynchron über einen der drei
- verfügbaren Timer 1 realisiert werden, um den flüssigen Tetris-Programmablauf
- durch die Verwendung von Verzögerungen nicht unnötig zu belasten.
+\begin_layout Subsubsection
+Abspielen der Musik
 \end_layout
 
-\begin_layout Itemize
-Dazu hat man sich für den Einsatz des 
+\begin_layout Standard
+Nach der 'Digitalisierung' der Musik sollte diese nun asynchron wiedergegeben
+ werden, um den flüssigen Tetris-Programmablauf zu gewährleisten.
+ Dazu wurde mit Timern gearbeitet – genauer gesagt mit Timer1 im 
 \emph on
 Clear Timer on Compare
 \emph default
- (CTC) Modus entschieden.
- 
+ (CTC) Modus: 
 \end_layout
 
-\begin_deeper
-\begin_layout Itemize
-Beim CTC Modus wird einerseits eine Interrupt Service Routine (ISR) ausgelöst,
- sobald ein festgelegter Vergleichswert (hier OCR1A) von einem konfigurtierten
- Timer erreicht wurde und andererseits dieser Timer zurückgesetzt.
+\begin_layout Standard
+Beim CTC Modus wird eine Interrupt Service Routine (ISR) ausgelöst, sobald
+ ein festgelegter Vergleichswert (hier OCR1A) von einem konfigurtierten
+ Timer erreicht wurde.
+ Gleichzeitig wird dieser Timer zurückgesetzt.
 \begin_inset Foot
 status open
 
@@ -952,11 +1028,11 @@ Vgl.
 
 \end_layout
 
-\begin_layout Itemize
-Der ATmega328P bietet die Möglichkeit, mittels sogenannter Prescaler u.a.
- die Auflösung der 16-Bit Timer zu verändern.
+\begin_layout Standard
+Der ATmega328P bietet dabei die Möglichkeit, mittels sogenannter Prescaler
+ die Zeitauflösung der 16-Bit Timer zu verändern.
  Für die Ermittlung der Prescaler-Konfiguration wurde festgelegt, dass ein
- Musik-Taktzeit etwa 1,5 Sekunden betragen sollte.
+ Musik-Takt etwa 1,5 Sekunden betragen sollte.
  Unter der Berücksichtigung der CPU-Frequenz von 16 MHZ konnte so ein passender
  Prescaler von 
 \begin_inset Formula $clk/1024$
@@ -965,7 +1041,7 @@ Der ATmega328P bietet die Möglichkeit, mittels sogenannter Prescaler u.a.
  ermittelt werden:
 \end_layout
 
-\begin_layout Itemize
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -976,11 +1052,11 @@ status open
 \begin_inset Tabular
 <lyxtabular version="3" rows="6" columns="3">
 <features tabularvalignment="middle">
-<column alignment="right" valignment="top">
-<column alignment="right" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <column alignment="center" valignment="top">
 <row>
-<cell alignment="right" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -989,11 +1065,11 @@ Prescaler
 
 \end_inset
 </cell>
-<cell alignment="right" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
-Benötigter Vergleichswert für 1,5 Sekunden
+Vergleichswert für 1,5 Sekunden
 \end_layout
 
 \end_inset
@@ -1009,7 +1085,7 @@ Mit uint16 abbildbar
 </cell>
 </row>
 <row>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1021,7 +1097,7 @@ Mit uint16 abbildbar
 
 \end_inset
 </cell>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1041,7 +1117,7 @@ Nein
 </cell>
 </row>
 <row>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1053,7 +1129,7 @@ Nein
 
 \end_inset
 </cell>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1073,7 +1149,7 @@ Nein
 </cell>
 </row>
 <row>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1085,7 +1161,7 @@ Nein
 
 \end_inset
 </cell>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1105,7 +1181,7 @@ Nein
 </cell>
 </row>
 <row>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1117,7 +1193,7 @@ Nein
 
 \end_inset
 </cell>
-<cell alignment="right" valignment="top" topline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1137,7 +1213,7 @@ Nein
 </cell>
 </row>
 <row>
-<cell alignment="right" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1149,7 +1225,7 @@ Nein
 
 \end_inset
 </cell>
-<cell alignment="right" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
 \begin_inset Text
 
 \begin_layout Plain Layout
@@ -1179,7 +1255,7 @@ Ja
 \begin_inset Caption Standard
 
 \begin_layout Plain Layout
-Ermittlung des Prescalers für Timer1
+Ermittlung geeigneter Prescaler für die Musikwiedergabe
 \end_layout
 
 \end_inset
@@ -1196,16 +1272,19 @@ Ermittlung des Prescalers für Timer1
 
 \end_layout
 
-\end_deeper
-\begin_layout Itemize
+\begin_layout Standard
 Schließlich konnte die ISR implementiert werden: Im Wesentlichen wird für
- jeden Aufruf eine Frequenz mittels Rechtecksschwingungen zum Erklingen
- gebracht und der nächsten Auslösezeitpunkt festgelegt.
- Dabei wurde insgesamt Ausführungsgeschwindigkeit gegenüber Codeumfang bevorzugt
-, um den Tetris-Programmablauf nicht unnötig lang zu unterbrechen.
+ jeden Aufruf eine Frequenz über den Funktionsaufruf tone mit einer generierten
+ Rechtecksschwingung zum Erklingen gebracht und der nächsten Auslösezeitpunkt
+ festgelegt.
+ Dabei wurde bei der Implementierung der ISR die Ausführungsgeschwindigkeit
+ gegenüber Codeumfang bevorzugt, um den Tetris-Programmablauf nicht unnötig
+ lang zu unterbrechen: Dies macht sich vor allem dadurch bemerkbar, dass
+ nur ein Mal geprüft wird, welcher der beiden Ton-Sequenzen gespielt werden
+ muss.
 \end_layout
 
-\begin_layout Itemize
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -1239,22 +1318,19 @@ void setup_music()
 
 \size small
     TCCR1B = 13; // set CS10 and CS12 bits for 1024 prescaler and WGM12
- for CTC mode (see p.
- 173, 172)
+ for CTC mode
 \end_layout
 
 \begin_layout LyX-Code
 
 \size small
     TIMSK1 = 2;  // set OCIEA and enable "Output Compare A Match Interrupt"
- for timer 1 (see p.
- 184)
 \end_layout
 
 \begin_layout LyX-Code
 
 \size small
-    OCR1A = MUSIC_CLK_SPEED; // Output Compare 1 A (16bit register see p.180)
+    OCR1A = 100; // set first compare value
 \end_layout
 
 \begin_layout LyX-Code
@@ -1290,7 +1366,7 @@ Konfiguration von Timer1
 
 \end_layout
 
-\begin_layout Itemize
+\begin_layout Standard
 \begin_inset Float figure
 wide false
 sideways false
@@ -1434,54 +1510,6 @@ wie es funktioniert ansteuerung
 
 \begin_layout Itemize
 implementierung
-\end_layout
-
-\begin_layout Itemize
-integration
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-timer
-\end_layout
-
-\begin_layout Itemize
-loop: ins pollen integrieren
-\end_layout
-
-\end_deeper
-\begin_layout Section
-Projektauswertung
-\end_layout
-
-\begin_layout Itemize
-Rückgriff auf Ziele: Auflisten, was alles erreicht wurde
-\end_layout
-
-\begin_layout Itemize
-Was wir außerdem gelernt haben
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-mit Microcontroller arbeitern
-\end_layout
-
-\begin_layout Itemize
-in Referenzen lesen
-\end_layout
-
-\begin_layout Itemize
-Implementierung lesen
-\end_layout
-
-\begin_layout Itemize
-ICs bei Conrad kaufen
-\end_layout
-
-\end_deeper
-\begin_layout Section
-Anhang
 \end_layout
 
 \begin_layout Standard
@@ -2664,6 +2692,7 @@ sideways false
 status open
 
 \begin_layout Plain Layout
+\align center
 \begin_inset Tabular
 <lyxtabular version="3" rows="7" columns="6">
 <features tabularvalignment="middle">
@@ -2734,7 +2763,7 @@ Segment-Pin 1
 \begin_inset Text
 
 \begin_layout Plain Layout
-Position
+Codierte Position
 \end_layout
 
 \end_inset
@@ -3098,5 +3127,49 @@ X[...]
 
 \end_layout
 
+\begin_layout Itemize
+integration
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+timer
+\end_layout
+
+\begin_layout Itemize
+loop: ins pollen integrieren
+\end_layout
+
+\end_deeper
+\begin_layout Section
+Projektauswertung
+\end_layout
+
+\begin_layout Itemize
+Rückgriff auf Ziele: Auflisten, was alles erreicht wurde
+\end_layout
+
+\begin_layout Itemize
+Was wir außerdem gelernt haben
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+mit Microcontroller arbeitern
+\end_layout
+
+\begin_layout Itemize
+in Referenzen lesen
+\end_layout
+
+\begin_layout Itemize
+Implementierung lesen
+\end_layout
+
+\begin_layout Itemize
+ICs bei Conrad kaufen
+\end_layout
+
+\end_deeper
 \end_body
 \end_document

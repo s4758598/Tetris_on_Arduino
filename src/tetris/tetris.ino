@@ -205,58 +205,56 @@ void move_left()
 /* Standard arduino function called after setup(). This is the main routine of the game. */
 void loop()
 { 
-    uint8_t pressed_button_old = 0;
-    uint8_t pressed_button_new = 0;
     uint32_t time;
   
     for (;;)
     {
-        for (uint8_t j = 0; j < 175 / game_speedup; j++)
+        for (uint8_t i = 0; i < 15 / game_speedup; i++)
         {
-            delay(2);
-            time = micros();
-            pressed_button_new = check_input_buttons();
-
-            if(!(pressed_button_new == check_input_buttons()))
+            
+            for (uint8_t j = 0; j < 10; j++)
             {
-                pressed_button_new = 0;
+                delay(5);
+                write_number_to_segment_display(score);
+            }
+            
+
+            switch(check_input_buttons())
+            {
+                case 1:
+                    rotate_left();
+                    break;
+
+                case 2:
+                    move_left();
+                    break;
+
+                case 3:
+                    move_right();
+                    break;
+
+                case 4:
+                    rotate_right();
+                    break;
+
+                default:
+                    break;
             }
 
-            if (pressed_button_old != pressed_button_new && micros() - time > 100)
+            for (uint8_t j = 0; j < 10; j++)
             {
-                switch(pressed_button_new)
-                {
-                    case 0:
-                        // do nothing, button debouncing produces unintended behavior
-                        break;
-                    case 1:
-                        rotate_left();
-                        break;
-
-                    case 2:
-                        move_left();
-                        break;
-
-                    case 3:
-                        move_right();
-                        break;
-
-                    case 4:
-                        rotate_right();
-                        break;
-                }
-                pressed_button_old = pressed_button_new;
+                delay(5);
+                write_number_to_segment_display(score);
             }
-
-            delay(5);
-            write_number_to_segment_display(score);
         }
+
         render();
 
         if (game_over_reached)
         {
             game_over();
         }
+        
         drop_stone_one_pixel();
     }
 }
